@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AgentSys — Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="dashboard">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">⚡ AgentSys</div>
+    <nav class="nav">
+      <a href="index.html" class="nav-link active">🏠 <span>Dashboard</span></a>
+      <a href="form.html" class="nav-link">➕ <span>Add Agent</span></a>
+      <a href="agents.html" class="nav-link">📋 <span>View Agents</span></a>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main">
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="menu-toggle" id="menu-toggle">☰</button>
+        <h1>Dashboard</h1>
+      </div>
+    
+    </header>
+
+    <section class="container">
+      <!-- Dashboard Cards -->
+      <div class="cards">
+        <div class="card">
+          <h3>Total Agents</h3>
+          <p id="total-agents">—</p>
+        </div>
+        <div class="card">
+          <h3>Active Agents</h3>
+          <p id="active-agents">—</p>
+        </div>
+        <div class="card">
+          <h3>Inactive Agents</h3>
+          <p id="inactive-agents">—</p>
+        </div>
+      </div>
+
+      <!-- Recent Agents Panel -->
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Recent Agents</h2>
+          <a href="agents.html" class="button">View All</a>
+        </div>
+        <div class="table-wrapper">
+          <table class="table" id="recent-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Full Name</th>
+                <th>Role</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Dynamically filled -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

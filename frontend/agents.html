@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AgentSys — Agents</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="agents">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">AgentSys</div>
+    <nav>
+      <a href="index.html" class="nav-link">🏠 Dashboard</a>
+      <a href="form.html" class="nav-link">➕ Add Agent</a>
+      <a href="agents.html" class="nav-link active">📋 View Agents</a>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main">
+    <header class="topbar">
+      <button class="menu-toggle" id="menu-toggle">☰</button>
+      <h1>Agents</h1>
+      <div class="actions">
+        <input id="search" placeholder="Search by name or email" />
+        <select id="filter-role"><option value="">All Roles</option></select>
+        <select id="filter-dept"><option value="">All Departments</option></select>
+        <select id="filter-status">
+          <option value="">All Status</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+        <a class="button primary" href="form.html">➕ Add Agent</a>
+      </div>
+    </header>
+
+    <section class="container">
+      <div class="panel">
+        <table class="table" id="agents-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Full Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Role</th>
+              <th>Department</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Agents will be inserted here dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

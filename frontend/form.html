@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AgentSys — Add / Edit Agent</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="form">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">AgentSys</div>
+    <nav>
+      <a href="index.html" class="nav-link">🏠 Dashboard</a>
+      <a href="form.html" class="nav-link active">➕ Add Agent</a>
+      <a href="agents.html" class="nav-link">📋 View Agents</a>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main">
+    <header class="topbar">
+      <button class="menu-toggle" id="menu-toggle">☰</button>
+      <h1 id="form-title">Add Agent</h1>
+    </header>
+
+    <section class="container">
+      <div class="panel form-panel">
+        <form id="agent-form">
+          <input type="hidden" id="agent-id" />
+
+          <label for="full_name">Full Name</label>
+          <input id="full_name" name="full_name" required />
+
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" required />
+
+          <label for="phone">Phone</label>
+          <input id="phone" name="phone" required />
+
+          <label for="address">Address</label>
+          <input id="address" name="address" />
+
+          <label for="role">Role</label>
+          <select id="role" name="role" required>
+            <option value="">-- Select Role --</option>
+            <option value="Agent">Agent</option>
+            <option value="Senior Agent">Senior Agent</option>
+            <option value="Supervisor">Supervisor</option>
+            <option value="Manager">Manager</option>
+            <option value="Administrator">Administrator</option>
+            <option value="Team Lead">Team Lead</option>
+            <option value="Freelancer">Freelancer</option>
+            <option value="Intern">Intern</option>
+          </select>
+
+          <label for="department">Department</label>
+          <select id="department" name="department" required>
+            <option value="">-- Select Department --</option>
+            <option value="Sales">Sales</option>
+            <option value="Marketing">Marketing</option>
+            <option value="Human Resources">Human Resources</option>
+            <option value="Finance">Finance</option>
+            <option value="IT">IT</option>
+            <option value="Customer Support">Customer Support</option>
+            <option value="Operations">Operations</option>
+            <option value="Logistics">Logistics</option>
+            <option value="Legal">Legal</option>
+          </select>
+
+          <label>Status</label>
+          <div class="status-toggle">
+            <input type="radio" id="status-active" name="status" value="active" checked />
+            <label for="status-active" class="toggle-btn active">Active</label>
+
+            <input type="radio" id="status-inactive" name="status" value="inactive" />
+            <label for="status-inactive" class="toggle-btn inactive">Inactive</label>
+          </div>
+
+          <label for="date_of_joining">Date of Joining</label>
+          <input id="date_of_joining" name="date_of_joining" type="date" />
+
+          <div class="form-actions">
+            <button type="submit" class="button primary">Save</button>
+            <a href="agents.html" class="button">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
