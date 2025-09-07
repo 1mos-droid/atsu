@@ -117,7 +117,7 @@ app.delete("/api/agents/:id", (req, res) => {
 // ========================
 // Catch-all: serve frontend index.html
 // ========================
-app.get("*", (req, res) => {
+app.use((req, res) => {
   res.sendFile(path.join(__dirname, "../frontend", "index.html"));
 });
 
