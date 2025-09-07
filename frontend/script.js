@@ -1,8 +1,7 @@
 /*
   script.js — handles all pages
 */
-const API_BASE_URL = 'http://localhost:5000/api/'; // 🔹 must match your backend
-
+const API_BASE_URL = '/api/';
 // ---------- Alert helper ----------
 function showAlert(message, type = 'success') {
   const el = document.createElement('div');
