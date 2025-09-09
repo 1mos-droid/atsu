@@ -36,6 +36,19 @@ function writeJsonData(data) {
 // API Routes
 // ========================
 
+// Simple login route (replace with real DB later)
+app.post("/api/login", (req, res) => {
+  const { email, password } = req.body;
+
+  const demoUser = { email: "admin@example.com", password: "123456" };
+
+  if (email === demoUser.email && password === demoUser.password) {
+    res.json({ success: true, user: { email } });
+  } else {
+    res.status(401).json({ success: false, error: "Invalid email or password" });
+  }
+});
+
 // Get all agents
 app.get("/api/agents", (req, res) => {
   const agents = readJsonData();
@@ -115,10 +128,10 @@ app.delete("/api/agents/:id", (req, res) => {
 });
 
 // ========================
-// Catch-all: serve frontend index.html
+// Catch-all: serve frontend login.html (force login first)
 // ========================
 app.use((req, res) => {
-  res.sendFile(path.join(__dirname, "../frontend", "index.html"));
+  res.sendFile(path.join(__dirname, "../frontend", "login.html"));
 });
 
 // Start server
