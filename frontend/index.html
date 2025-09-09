@@ -70,8 +70,8 @@
     </section>
   </main>
 <script>
-  // If no user is logged in, redirect to login.html
-  const user = localStorage.getItem("user");
+  // If no user is logged in for this session, redirect to login.html
+  const user = sessionStorage.getItem("user");
   if (!user) {
     window.location.href = "login.html";
   }
