@@ -14,8 +14,9 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     const data = await res.json();
 
     if (res.ok) {
-      // Store login status in localStorage
-      localStorage.setItem("user", JSON.stringify(data.user));
+      // ✅ Use sessionStorage (clears automatically when tab/browser closes)
+      sessionStorage.setItem("user", JSON.stringify(data.user));
+
       // Redirect to dashboard
       window.location.href = "index.html";
     } else {
