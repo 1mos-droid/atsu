@@ -40,7 +40,7 @@ function writeJsonData(data) {
 app.post("/api/login", (req, res) => {
   const { email, password } = req.body;
 
-  const demoUser = { email: "admin@example.com", password: "123456" };
+  const demoUser = { email: "datnova@gmail.com", password: "datnova@999" };
 
   if (email === demoUser.email && password === demoUser.password) {
     res.json({ success: true, user: { email } });
