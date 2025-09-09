@@ -69,7 +69,13 @@
       </div>
     </section>
   </main>
-
+<script>
+  // If no user is logged in, redirect to login.html
+  const user = localStorage.getItem("user");
+  if (!user) {
+    window.location.href = "login.html";
+  }
+</script>
   <script src="script.js"></script>
 </body>
 </html>
