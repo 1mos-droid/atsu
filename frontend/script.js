@@ -1,7 +1,12 @@
 /*
   script.js — handles all pages
 */
-const API_BASE_URL = '/api/';
+
+// 🌍 Auto-detect API URL (local vs production)
+const API_BASE_URL =
+  window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+    ? "http://localhost:5000/api/"
+    : "https://atsu.onrender.com/api/"; // 🔹 replace with your actual Render URL
 
 // ---------- Alert helper ----------
 function showAlert(message, type = 'success') {
@@ -63,7 +68,6 @@ async function renderDashboard() {
     document.getElementById('active-agents').textContent = active;
     document.getElementById('inactive-agents').textContent = inactive;
 
-    // recent 5
     const recent = agents.slice().sort((a, b) => (b.id || 0) - (a.id || 0)).slice(0, 5);
     const tbody = document.querySelector('#recent-table tbody');
     tbody.innerHTML = '';
@@ -211,6 +215,26 @@ async function setupFormPage() {
   });
 }
 
+// ---------- Login ----------
+async function handleLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  try {
+    const data = await request(API_BASE_URL + "login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    });
+
+    localStorage.setItem("user", JSON.stringify(data.user));
+    window.location.href = "index.html";
+  } catch (err) {
+    document.getElementById("error").textContent = err.message || "Login failed.";
+  }
+}
+
+// ---------- Helpers ----------
 function fillForm(a) {
   document.getElementById('full_name').value = a.full_name || '';
   document.getElementById('email').value = a.email || '';
@@ -241,7 +265,6 @@ function readForm() {
   };
 }
 
-// ---------- Helpers ----------
 function escapeHtml(str) {
   return String(str)
     .replace(/&/g, '&amp;')
@@ -255,7 +278,6 @@ function escapeHtml(str) {
 function init() {
   const page = document.body.dataset.page;
 
-  // 🔐 auth check first
   requireAuth(page);
 
   if (page === 'dashboard') renderDashboard();
@@ -268,40 +290,8 @@ function init() {
     document.querySelector('#agents-table tbody').addEventListener('click', agentsTableHandler);
   }
   if (page === 'form') setupFormPage();
-
-  // login page
-  if (page === 'login') {
-    const form = document.getElementById("loginForm");
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-
-      try {
-        const res = await fetch(API_BASE_URL + "login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        });
-
-        const data = await res.json();
-
-        if (res.ok) {
-          localStorage.setItem("user", JSON.stringify(data.user));
-          window.location.href = "index.html";
-        } else {
-          document.getElementById("error").textContent = data.error || "Login failed.";
-        }
-      } catch (err) {
-        document.getElementById("error").textContent = "Server error.";
-      }
-    });
-  }
-
-  // logout page
-  if (page === 'logout') {
-    logout();
-  }
+  if (page === 'login') document.getElementById("loginForm").addEventListener("submit", handleLogin);
+  if (page === 'logout') logout();
 
   // sidebar toggle
   const menuToggle = document.getElementById('menu-toggle');
@@ -323,29 +313,4 @@ function init() {
   }
 
   // nav highlight
-  const navLinks = document.querySelectorAll('.nav-link');
-  const currentPage = window.location.pathname.split('/').pop();
-  navLinks.forEach(link => {
-    if (link.getAttribute('href') === currentPage) {
-      link.classList.add('active');
-    }
-  });
-
-  // 🎨 auto background switch
-  const backgrounds = [
-    "linear-gradient(135deg, #f9fbfd, #eef2f9)",
-    "linear-gradient(135deg, #fff7ed, #fde68a)",
-    "linear-gradient(135deg, #f0fdfa, #99f6e4)"
-  ];
-  let current = 0;
-  setInterval(() => {
-    current = (current + 1) % backgrounds.length;
-    document.documentElement.style.setProperty("--bg", backgrounds[current]);
-  }, 5000);
-}
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
-} else {
-  init();
-}
+  const navLinks = document.querySelectorAll('.nav
