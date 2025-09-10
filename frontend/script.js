@@ -1,4 +1,6 @@
-const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" ? "http://localhost:5000/api/" : "https://atsu-4.onrender.com/api/";
+const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
+  ? "http://localhost:5000/api/" 
+  : "https://atsu-4.onrender.com/api/";
 
 function showAlert(message, type = 'success', duration = 3000) {
   const el = document.createElement('div');
@@ -330,33 +332,49 @@ function addThemeToggleButton() {
   container.appendChild(btn);
 }
 
+/** FIXED SIDEBAR FUNCTION **/
 function initSidebar() {
   const sidebar = document.getElementById('sidebar');
   const toggle = document.getElementById('sidebarToggle');
   const collapsedKey = 'sidebarCollapsed';
+
   if (!sidebar) return;
 
+  // Apply saved collapsed state
   const collapsed = localStorage.getItem(collapsedKey) === 'true';
-  if (collapsed) sidebar.classList.add('collapsed');
-
-  if (toggle) toggle.addEventListener('click', () => {
-    sidebar.classList.toggle('collapsed');
-    localStorage.setItem(collapsedKey, sidebar.classList.contains('collapsed'));
-  });
-
-  function setActiveLink() {
-    const page = document.body && document.body.dataset.page ? document.body.dataset.page : null;
-    const links = qsa('#sidebar a');
-    links.forEach(l => l.classList.remove('active'));
-    if (page) {
-      const match = qsa(`#sidebar a[data-page="${page}"]`)[0];
-      if (match) match.classList.add('active');
-    } else {
-      const path = window.location.pathname.split('/').pop();
-      const match = qsa(`#sidebar a[href*="${path}"]`)[0];
-      if (match) match.classList.add('active');
-    }
+  if (collapsed) {
+    sidebar.classList.add('collapsed');
+    document.body.classList.add('sidebar-collapsed');
   }
+
+  // Toggle collapse
+  if (toggle) {
+    toggle.addEventListener('click', () => {
+      const isCollapsed = sidebar.classList.toggle('collapsed');
+      document.body.classList.toggle('sidebar-collapsed', isCollapsed);
+      localStorage.setItem(collapsedKey, isCollapsed);
+    });
+  }
+
+  // Highlight active link
+  function setActiveLink() {
+    const page = document.body?.dataset?.page || null;
+    const links = qsa('#sidebar a');
+    links.forEach(link => link.classList.remove('active'));
+
+    if (page) {
+      const match = qs(`#sidebar a[data-page="${page}"]`);
+      if (match) {
+        match.classList.add('active');
+        return;
+      }
+    }
+
+    const currentPath = window.location.pathname.split('/').pop();
+    const match = qs(`#sidebar a[href*="${currentPath}"]`);
+    if (match) match.classList.add('active');
+  }
+
   setActiveLink();
 }
 
