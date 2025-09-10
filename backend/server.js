@@ -36,14 +36,20 @@ app.post("/api/login", (req, res) => {
 // Agents CRUD with Supabase/Postgres
 // ========================
 
-// Get all agents
 app.get("/api/agents", async (req, res) => {
+  console.log("➡️ Incoming request to /api/agents");
+
   try {
     const result = await db.query("SELECT * FROM agents ORDER BY id ASC");
+    console.log("✅ Query successful:", result.rows);
     res.json(result.rows);
   } catch (err) {
-    console.error("❌ Error fetching agents:", err);
-    res.status(500).json({ error: "Database error" });
+    console.error("❌ Database query failed:", err.message);
+    res.status(500).json({
+      error: "Database error",
+      details: err.message,  // <-- Show real error message
+      stack: err.stack       // <-- Optional: helpful for debugging
+    });
   }
 });
 
