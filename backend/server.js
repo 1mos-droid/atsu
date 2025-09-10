@@ -18,7 +18,9 @@ app.use(express.static(path.join(__dirname, "../frontend")));
 // Path to JSON file
 const jsonFilePath = path.join(__dirname, "agent.json");
 
-// Helper: read all agents from JSON
+// ---------------------------
+// Helper: read/write JSON
+// ---------------------------
 function readJsonData() {
   if (fs.existsSync(jsonFilePath)) {
     const fileContent = fs.readFileSync(jsonFilePath, "utf-8");
@@ -27,14 +29,27 @@ function readJsonData() {
   return [];
 }
 
-// Helper: write all agents to JSON
 function writeJsonData(data) {
   fs.writeFileSync(jsonFilePath, JSON.stringify(data, null, 2), "utf-8");
 }
 
-// ========================
-// API Routes
-// ========================
+// ---------------------------
+// Login Route
+// ---------------------------
+app.post("/api/login", (req, res) => {
+  const { email, password } = req.body;
+
+  // Hardcoded login
+  if (email === "datnova@gmail.com" && password === "datnova@999") {
+    return res.json({ success: true, message: "Login successful" });
+  } else {
+    return res.status(401).json({ success: false, message: "Invalid credentials" });
+  }
+});
+
+// ---------------------------
+// API Routes (agents)
+// ---------------------------
 
 // Get all agents
 app.get("/api/agents", (req, res) => {
@@ -114,11 +129,11 @@ app.delete("/api/agents/:id", (req, res) => {
   res.json({ message: "Agent deleted successfully" });
 });
 
-// ========================
-// Catch-all: serve frontend index.html
-// ========================
+// ---------------------------
+// Catch-all: always serve login.html first
+// ---------------------------
 app.use((req, res) => {
-  res.sendFile(path.join(__dirname, "../frontend", "index.html"));
+  res.sendFile(path.join(__dirname, "../frontend", "login.html"));
 });
 
 // Start server
