@@ -17,8 +17,8 @@ app.use(bodyParser.json());
 app.use(express.static(FRONTEND_PATH)); // serve frontend files
 
 // ---------- Helpers ----------
-function readAgents() {
-  if (!fs.existsSync(DATA_FILE)) return []; // handle missing file
+const readAgents = () => {
+  if (!fs.existsSync(DATA_FILE)) return [];
   try {
     const data = fs.readFileSync(DATA_FILE, 'utf-8');
     return JSON.parse(data || '[]');
@@ -26,16 +26,16 @@ function readAgents() {
     console.error('Error reading agents.json:', err);
     return [];
   }
-}
+};
 
-function writeAgents(agents) {
+const writeAgents = (agents) => {
   try {
     fs.writeFileSync(DATA_FILE, JSON.stringify(agents, null, 2), 'utf-8');
   } catch (err) {
     console.error('Error writing agents.json:', err);
     throw err;
   }
-}
+};
 
 // ---------- Hardcoded Users ----------
 const USERS = [
@@ -44,6 +44,8 @@ const USERS = [
 ];
 
 // ---------- API Routes ----------
+
+// Login
 app.post('/api/login', (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
@@ -55,16 +57,19 @@ app.post('/api/login', (req, res) => {
   res.json({ user: userSafe });
 });
 
+// Get all agents
 app.get('/api/agents', (req, res) => {
   res.json(readAgents());
 });
 
+// Get agent by ID
 app.get('/api/agents/:id', (req, res) => {
   const agent = readAgents().find(a => String(a.id) === String(req.params.id));
   if (!agent) return res.status(404).json({ error: 'Agent not found' });
   res.json(agent);
 });
 
+// Create new agent
 app.post('/api/agents', (req, res) => {
   const agents = readAgents();
   const newAgent = {
@@ -83,6 +88,7 @@ app.post('/api/agents', (req, res) => {
   res.status(201).json(newAgent);
 });
 
+// Update agent
 app.put('/api/agents/:id', (req, res) => {
   const agents = readAgents();
   const index = agents.findIndex(a => String(a.id) === String(req.params.id));
@@ -93,8 +99,9 @@ app.put('/api/agents/:id', (req, res) => {
   res.json(agents[index]);
 });
 
+// Delete agent
 app.delete('/api/agents/:id', (req, res) => {
-  let agents = readAgents();
+  const agents = readAgents();
   const index = agents.findIndex(a => String(a.id) === String(req.params.id));
   if (index === -1) return res.status(404).json({ error: 'Agent not found' });
 
@@ -104,7 +111,10 @@ app.delete('/api/agents/:id', (req, res) => {
 });
 
 // ---------- Fallbacks ----------
-app.use('/api/*', (req, res) => res.status(404).json({ error: 'API endpoint not found' }));
+// Handle all unmatched API routes
+app.all('/api/*', (req, res) => res.status(404).json({ error: 'API endpoint not found' }));
+
+// Serve frontend for all other routes
 app.get('*', (req, res) => res.sendFile(path.join(FRONTEND_PATH, 'index.html')));
 
 // ---------- Start server ----------
