@@ -1,21 +1,27 @@
 const { Pool } = require("pg");
-const { URL } = require("url");
 
+// Force Node.js to prefer IPv4 over IPv6
+process.env.NODE_OPTIONS = "--dns-result-order=ipv4first";
+
+// Get DATABASE_URL from environment variables
 let connectionString = process.env.DATABASE_URL;
 
-// Force IPv4 by converting the hostname to IPv4
-if (connectionString) {
-  const parsedUrl = new URL(connectionString);
-  if (parsedUrl.hostname.endsWith("supabase.co")) {
-    // Use IPv4 host for Render compatibility
-    parsedUrl.hostname = "db." + parsedUrl.hostname.split("db.")[1];
-    connectionString = parsedUrl.toString() + "?sslmode=require";
+if (!connectionString) {
+  throw new Error("❌ DATABASE_URL is not set in environment variables");
+}
+
+// Ensure `sslmode=require` is appended correctly
+if (!connectionString.includes("sslmode=require")) {
+  if (connectionString.includes("?")) {
+    connectionString += "&sslmode=require";
+  } else {
+    connectionString += "?sslmode=require";
   }
 }
 
 const pool = new Pool({
   connectionString,
-  ssl: { rejectUnauthorized: false },
+  ssl: { rejectUnauthorized: false }, // Required by Supabase
 });
 
 module.exports = {
