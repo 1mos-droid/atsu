@@ -6,7 +6,7 @@
 const API_BASE_URL =
   window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:5000/api/"
-    : "https://atsu.onrender.com/api/"; // 🔹 replace with your actual Render URL
+    : "https://atsu-4.onrender.com/api/"; // 🔹 replace with your actual Render URL
 
 // ---------- Alert helper ----------
 function showAlert(message, type = 'success') {
