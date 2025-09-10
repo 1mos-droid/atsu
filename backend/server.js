@@ -1,8 +1,8 @@
 // server.js
-const db = require("./db");
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const db = require("./db"); // <-- your db.js uses pg Pool
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -12,14 +12,14 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve frontend (from "../frontend" folder)
+// Serve frontend
 app.use(express.static(path.join(__dirname, "../frontend")));
 
 // ========================
 // API Routes
 // ========================
 
-// Simple login route (still demo, you can connect this to DB later)
+// Demo login (replace with DB auth later if you want)
 app.post("/api/login", (req, res) => {
   const { email, password } = req.body;
 
@@ -39,10 +39,10 @@ app.post("/api/login", (req, res) => {
 // Get all agents
 app.get("/api/agents", async (req, res) => {
   try {
-    const { rows } = await db.query("SELECT * FROM agents ORDER BY id ASC");
-    res.json(rows);
+    const result = await db.query("SELECT * FROM agents ORDER BY id ASC");
+    res.json(result.rows);
   } catch (err) {
-    console.error(err);
+    console.error("❌ Error fetching agents:", err);
     res.status(500).json({ error: "Database error" });
   }
 });
@@ -50,14 +50,14 @@ app.get("/api/agents", async (req, res) => {
 // Get single agent
 app.get("/api/agents/:id", async (req, res) => {
   try {
-    const { rows } = await db.query("SELECT * FROM agents WHERE id = $1", [
+    const result = await db.query("SELECT * FROM agents WHERE id = $1", [
       req.params.id,
     ]);
-    if (rows.length === 0)
+    if (result.rows.length === 0)
       return res.status(404).json({ error: "Agent not found" });
-    res.json(rows[0]);
+    res.json(result.rows[0]);
   } catch (err) {
-    console.error(err);
+    console.error("❌ Error fetching agent:", err);
     res.status(500).json({ error: "Database error" });
   }
 });
@@ -66,15 +66,15 @@ app.get("/api/agents/:id", async (req, res) => {
 app.post("/api/agents", async (req, res) => {
   const { full_name, email, phone, role, department, status } = req.body;
   try {
-    const { rows } = await db.query(
+    const result = await db.query(
       `INSERT INTO agents (full_name, email, phone, role, department, status)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
       [full_name, email, phone, role, department, status]
     );
-    res.json(rows[0]);
+    res.json(result.rows[0]);
   } catch (err) {
-    console.error(err);
+    console.error("❌ Error adding agent:", err);
     res.status(500).json({ error: "Database error" });
   }
 });
@@ -83,18 +83,18 @@ app.post("/api/agents", async (req, res) => {
 app.put("/api/agents/:id", async (req, res) => {
   const { full_name, email, phone, role, department, status } = req.body;
   try {
-    const { rows } = await db.query(
+    const result = await db.query(
       `UPDATE agents
        SET full_name = $1, email = $2, phone = $3, role = $4, department = $5, status = $6
        WHERE id = $7
        RETURNING *`,
       [full_name, email, phone, role, department, status, req.params.id]
     );
-    if (rows.length === 0)
+    if (result.rows.length === 0)
       return res.status(404).json({ error: "Agent not found" });
-    res.json(rows[0]);
+    res.json(result.rows[0]);
   } catch (err) {
-    console.error(err);
+    console.error("❌ Error updating agent:", err);
     res.status(500).json({ error: "Database error" });
   }
 });
@@ -102,20 +102,20 @@ app.put("/api/agents/:id", async (req, res) => {
 // Delete agent
 app.delete("/api/agents/:id", async (req, res) => {
   try {
-    const { rowCount } = await db.query("DELETE FROM agents WHERE id = $1", [
+    const result = await db.query("DELETE FROM agents WHERE id = $1", [
       req.params.id,
     ]);
-    if (rowCount === 0)
+    if (result.rowCount === 0)
       return res.status(404).json({ error: "Agent not found" });
     res.json({ message: "Agent deleted successfully" });
   } catch (err) {
-    console.error(err);
+    console.error("❌ Error deleting agent:", err);
     res.status(500).json({ error: "Database error" });
   }
 });
 
 // ========================
-// Catch-all: serve frontend login.html (force login first)
+// Catch-all → login page
 // ========================
 app.use((req, res) => {
   res.sendFile(path.join(__dirname, "../frontend", "login.html"));
@@ -123,5 +123,5 @@ app.use((req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
