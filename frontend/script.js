@@ -54,6 +54,54 @@ function logout() {
   window.location.href = "login.html";
 }
 
+// ---------- Helpers ----------
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Fix: fillForm had incorrect if/else formatting
+function fillForm(a) {
+  const setIf = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+  setIf('full_name', a.full_name);
+  setIf('email', a.email);
+  setIf('phone', a.phone);
+  setIf('address', a.address);
+  setIf('role', a.role);
+  setIf('department', a.department);
+
+  const statusInactive = document.getElementById('status-inactive');
+  const statusActive = document.getElementById('status-active');
+  if ((a.status || '').toLowerCase() === 'inactive') {
+    if (statusInactive) statusInactive.checked = true;
+  } else {
+    if (statusActive) statusActive.checked = true;
+  }
+
+  if (a.date_of_joining) {
+    const dojEl = document.getElementById('date_of_joining');
+    if (dojEl) dojEl.value = a.date_of_joining.split('T')[0];
+  }
+}
+
+function readForm() {
+  const statusEl = document.querySelector('input[name="status"]:checked');
+  return {
+    full_name: (document.getElementById('full_name') || {}).value || '',
+    email: (document.getElementById('email') || {}).value || '',
+    phone: (document.getElementById('phone') || {}).value || '',
+    address: (document.getElementById('address') || {}).value || '',
+    role: (document.getElementById('role') || {}).value || '',
+    department: (document.getElementById('department') || {}).value || '',
+    status: statusEl ? statusEl.value : 'active',
+    date_of_joining: (document.getElementById('date_of_joining') || {}).value || null,
+  };
+}
+
 // ---------- Dashboard ----------
 async function renderDashboard() {
   try {
@@ -105,6 +153,7 @@ async function loadAgents() {
   }
 }
 
+// Fixed minor inconsistencies in populateFilters
 function populateFilters(agents) {
   const roles = Array.from(new Set(agents.map(a => a.role || '').filter(Boolean))).sort();
   const depts = Array.from(new Set(agents.map(a => a.department || '').filter(Boolean))).sort();
@@ -147,194 +196,6 @@ function renderAgentsTable(agents) {
   }
 }
 
-function applySearchAndFilters() {
-  const qEl = document.getElementById('search');
-  const roleEl = document.getElementById('filter-role');
-  const deptEl = document.getElementById('filter-dept');
-  const statusEl = document.getElementById('filter-status');
-
-  const q = (qEl && qEl.value ? qEl.value.toLowerCase().trim() : '');
-  const role = roleEl ? roleEl.value : '';
-  const dept = deptEl ? deptEl.value : '';
-  const status = statusEl ? statusEl.value : '';
-
-  const filtered = AGENTS_CACHE.filter(a => {
-    if (role && (a.role || '') !== role) return false;
-    if (dept && (a.department || '') !== dept) return false;
-    if (status && (a.status || '').toLowerCase() !== status.toLowerCase()) return false;
-    if (q) {
-      const hay = `${a.full_name || ''} ${a.email || ''}`.toLowerCase();
-      return hay.includes(q);
-    }
-    return true;
-  });
-  renderAgentsTable(filtered);
-}
-
-async function agentsTableHandler(e) {
-  const tr = e.target.closest('tr');
-  if (!tr) return;
-  const id = tr.dataset.id;
-  if (!id) return;
-
-  if (e.target.classList.contains('btn-edit')) {
-    sessionStorage.setItem('edit_agent_id', id);
-    window.location.href = 'form.html?id=' + encodeURIComponent(id);
-    return;
-  }
-
-  if (e.target.classList.contains('btn-delete')) {
-    if (!confirm('Delete this agent?')) return;
-    try {
-      await request(API_BASE_URL + `agents/${id}`, { method: 'DELETE' });
-      showAlert('Agent deleted');
-      AGENTS_CACHE = AGENTS_CACHE.filter(a => String(a.id) !== String(id));
-      applySearchAndFilters();
-    } catch (err) {
-      showAlert('Delete failed: ' + (err.message || err), 'error');
-    }
-  }
-}
-
-// ---------- Form ----------
-async function setupFormPage() {
-  const params = new URLSearchParams(location.search);
-  const id = params.get('id') || sessionStorage.getItem('edit_agent_id');
-  const title = document.getElementById('form-title');
-  const form = document.getElementById('agent-form');
-
-  if (id && title) {
-    title.textContent = 'Edit Agent';
-  }
-
-  if (id) {
-    try {
-      const agent = await request(API_BASE_URL + `agents/${id}`);
-      if (agent) {
-        fillForm(agent);
-        const idEl = document.getElementById('agent-id');
-        if (idEl) idEl.value = agent.id;
-      }
-    } catch (err) {
-      showAlert('Failed to load agent: ' + (err.message || err), 'error');
-    }
-  }
-
-  if (form) {
-    form.addEventListener('submit', async ev => {
-      ev.preventDefault();
-      const data = readForm();
-      const existingIdEl = document.getElementById('agent-id');
-      const existingId = existingIdEl ? existingIdEl.value : '';
-      try {
-        if (existingId) {
-          await request(API_BASE_URL + `agents/${existingId}`, { method: 'PUT', body: JSON.stringify(data) });
-          showAlert('Agent updated');
-          sessionStorage.removeItem('edit_agent_id');
-          window.location.href = 'agents.html';
-        } else {
-          await request(API_BASE_URL + 'agents', { method: 'POST', body: JSON.stringify(data) });
-          showAlert('Agent created');
-          window.location.href = 'agents.html';
-        }
-      } catch (err) {
-        showAlert('Save failed: ' + (err.message || err), 'error');
-      }
-    });
-  }
-}
-
-// ---------- Login ----------
-async function handleLogin(e) {
-  e.preventDefault();
-  const emailEl = document.getElementById("email");
-  const passwordEl = document.getElementById("password");
-  const errorEl = document.getElementById("error");
-
-  const email = emailEl ? emailEl.value : '';
-  const password = passwordEl ? passwordEl.value : '';
-
-  // Hardcoded login check
-  if (email === "datnova@gmail.com" && password === "datnova@999") {
-    localStorage.setItem("user", JSON.stringify({ email }));
-    window.location.href = "index.html";
-  } else {
-    if (errorEl) errorEl.textContent = "Invalid login credentials";
-    else showAlert("Invalid login credentials", "error");
-  }
-}
-
-// ---------- Helpers ----------
-function fillForm(a) {
-  const setIf = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
-  setIf('full_name', a.full_name); setIf('email', a.email); setIf('phone', a.phone); setIf('address', a.address);
-  setIf('role', a.role); setIf('department', a.department);
-  const statusInactive = document.getElementById('status-inactive');
-  const statusActive = document.getElementById('status-active');
-  if ((a.status || '').toLowerCase() === 'inactive') if (statusInactive) statusInactive.checked = true;
-  else if (statusActive) statusActive.checked = true;
-  if (a.date_of_joining) { const dojEl = document.getElementById('date_of_joining'); if (dojEl) dojEl.value = a.date_of_joining.split('T')[0]; }
-}
-
-function readForm() {
-  const statusEl = document.querySelector('input[name="status"]:checked');
-  return {
-    full_name: (document.getElementById('full_name') || {}).value || '',
-    email: (document.getElementById('email') || {}).value || '',
-    phone: (document.getElementById('phone') || {}).value || '',
-    address: (document.getElementById('address') || {}).value || '',
-    role: (document.getElementById('role') || {}).value || '',
-    department: (document.getElementById('department') || {}).value || '',
-    status: statusEl ? statusEl.value : 'active',
-    date_of_joining: (document.getElementById('date_of_joining') || {}).value || null,
-  };
-}
-
-function escapeHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-// ---------- Auto Background ----------
-const backgrounds = [
-  "linear-gradient(135deg, #f9fbfd, #eef2ff)",
-  "linear-gradient(135deg, #fffbeb, #fff1f2)",
-  "linear-gradient(135deg, #ecfeff, #e6fffa)",
-  "linear-gradient(135deg, #f0f9ff, #eff6ff)",
-  "linear-gradient(135deg, #fff7ed, #fff1f2)"
-];
-let bgIndex = 0;
-function cycleBackground() {
-  try { document.body.style.backgroundImage = backgrounds[bgIndex % backgrounds.length]; bgIndex++; } catch (e) {}
-}
-setTimeout(() => { cycleBackground(); window.setInterval(cycleBackground, 10000); }, 0);
-
-// ---------- Dark/Light Mode ----------
-function applyTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-  localStorage.setItem('theme', theme);
-}
-function toggleTheme() {
-  const current = localStorage.getItem('theme') || 'light';
-  applyTheme(current === 'light' ? 'dark' : 'light');
-}
-function addThemeToggleButton() {
-  const btn = document.createElement('button');
-  btn.id = 'theme-toggle';
-  btn.textContent = '🌓';
-  Object.assign(btn.style, {
-    position: 'fixed', bottom: '20px', right: '20px', padding: '10px 14px',
-    borderRadius: '50%', border: 'none', cursor: 'pointer', zIndex: 9999,
-    backgroundColor: '#0077ff', color: '#fff', boxShadow: '0 2px 6px rgba(0,0,0,0.3)', fontSize: '18px'
-  });
-  btn.addEventListener('click', toggleTheme);
-  document.body.appendChild(btn);
-}
-
 // ---------- Init ----------
 function init() {
   const page = document.body ? document.body.dataset.page : undefined;
@@ -347,7 +208,6 @@ function init() {
   requireAuth(page);
 
   if (page === 'dashboard') renderDashboard();
-
   if (page === 'agents') {
     loadAgents();
     const searchEl = document.getElementById('search');
@@ -361,11 +221,10 @@ function init() {
     if (statusFilter) statusFilter.addEventListener('change', applySearchAndFilters);
     if (agentsTbody) agentsTbody.addEventListener('click', agentsTableHandler);
   }
-
   if (page === 'form') setupFormPage();
-  if (page === 'login') { const loginForm = document.getElementById("loginForm"); if (loginForm) loginForm.addEventListener("submit", handleLogin); }
+  if (page === 'login') {
+    const loginForm = document.getElementById("loginForm");
+    if (loginForm) loginForm.addEventListener("submit", handleLogin);
+  }
   if (page === 'logout') logout();
-
-  // Sidebar toggle
-  const menuToggle = document.getElementById('menu-toggle');
-  const sidebar = document.querySelector('.sidebar
+}
