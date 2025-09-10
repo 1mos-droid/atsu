@@ -132,6 +132,40 @@ function readForm() {
   };
 }
 
+// ---------- Save Agent ----------
+async function saveAgent(agent) {
+  try {
+    await request(API_BASE_URL + 'agents', {
+      method: "POST",
+      body: JSON.stringify(agent),
+    });
+
+    showAlert("Agent saved successfully!");
+    window.location.href = "agents.html"; // Redirect to agent list after saving
+  } catch (err) {
+    showAlert("Failed to save agent: " + (err.message || err), "error");
+  }
+}
+
+// ---------- Setup Form Page ----------
+function setupFormPage() {
+  const form = document.getElementById('agentForm'); // Ensure form has this ID
+  if (!form) return;
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const agentData = readForm();
+
+    // Validation
+    if (!agentData.full_name || !agentData.email) {
+      showAlert("Full Name and Email are required.", "error");
+      return;
+    }
+
+    await saveAgent(agentData);
+  });
+}
+
 // ---------- Dashboard ----------
 async function renderDashboard() {
   try {
@@ -233,17 +267,15 @@ function renderAgentsTable(agents) {
 
 // ---------- Sidebar Toggle ----------
 function setupSidebar() {
-  const sidebarToggle = document.getElementById('menu-toggle'); // FIXED: Matches your HTML ID
+  const sidebarToggle = document.getElementById('menu-toggle'); 
   const sidebar = document.querySelector('.sidebar');
   if (!sidebarToggle || !sidebar) return;
 
-  // Toggle sidebar on button click
   sidebarToggle.addEventListener('click', () => {
     sidebar.classList.toggle('open');
     document.body.classList.toggle('sidebar-open');
   });
 
-  // Close sidebar when clicking overlay
   document.body.addEventListener('click', (e) => {
     if (document.body.classList.contains('sidebar-open') && e.target === document.body) {
       sidebar.classList.remove('open');
@@ -256,14 +288,12 @@ function setupSidebar() {
 function init() {
   const page = document.body ? document.body.dataset.page : undefined;
 
-  // Check authentication
   requireAuth(page);
-
   setupSidebar();
 
   if (page === 'dashboard') renderDashboard();
   if (page === 'agents') loadAgents();
-  if (page === 'form') setupFormPage?.();
+  if (page === 'form') setupFormPage(); // Fixed optional chaining issue
 
   if (page === 'login') {
     const loginForm = document.getElementById("loginForm");
