@@ -6,13 +6,17 @@ const cors = require('cors');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const DATA_FILE = path.join(__dirname, 'agents.json');
 
-// Middleware
+// ---------- Paths ----------
+const DATA_FILE = path.join(__dirname, 'agents.json'); // backend/agents.json
+const FRONTEND_PATH = path.join(__dirname, '..', 'frontend'); // frontend folder is one level up
+
+// ---------- Middleware ----------
 app.use(cors());
 app.use(bodyParser.json());
+app.use(express.static(FRONTEND_PATH)); // serve frontend files
 
-// ---------------- Helpers ----------------
+// ---------- Helpers ----------
 function readAgents() {
   try {
     const data = fs.readFileSync(DATA_FILE, 'utf-8');
@@ -32,42 +36,27 @@ function writeAgents(agents) {
   }
 }
 
-// Simple hardcoded users for login
+// ---------- Hardcoded Users ----------
 const USERS = [
-  {
-    id: 1,
-    email: 'admin@example.com',
-    password: 'admin123', // in real apps, hash passwords!
-    name: 'Admin User'
-  },
-  {
-    id: 2,
-    email: 'user@example.com',
-    password: 'user123',
-    name: 'Regular User'
-  }
+  { id: 1, email: 'admin@example.com', password: 'admin123', name: 'Admin User' },
+  { id: 2, email: 'user@example.com', password: 'user123', name: 'Regular User' }
 ];
 
-// ---------------- Routes ----------------
-
-// LOGIN
+// ---------- API Routes ----------
 app.post('/api/login', (req, res) => {
   const { email, password } = req.body;
   const user = USERS.find(u => u.email === email && u.password === password);
   if (!user) return res.status(401).json({ error: 'Invalid email or password' });
 
-  // Return user info without password
   const { password: _, ...userSafe } = user;
   res.json({ user: userSafe });
 });
 
-// GET all agents
 app.get('/api/agents', (req, res) => {
   const agents = readAgents();
   res.json(agents);
 });
 
-// GET single agent
 app.get('/api/agents/:id', (req, res) => {
   const agents = readAgents();
   const agent = agents.find(a => String(a.id) === String(req.params.id));
@@ -75,7 +64,6 @@ app.get('/api/agents/:id', (req, res) => {
   res.json(agent);
 });
 
-// POST create new agent
 app.post('/api/agents', (req, res) => {
   const agents = readAgents();
   const newAgent = {
@@ -94,7 +82,6 @@ app.post('/api/agents', (req, res) => {
   res.status(201).json(newAgent);
 });
 
-// PUT update agent
 app.put('/api/agents/:id', (req, res) => {
   const agents = readAgents();
   const index = agents.findIndex(a => String(a.id) === String(req.params.id));
@@ -106,7 +93,6 @@ app.put('/api/agents/:id', (req, res) => {
   res.json(updated);
 });
 
-// DELETE agent
 app.delete('/api/agents/:id', (req, res) => {
   let agents = readAgents();
   const index = agents.findIndex(a => String(a.id) === String(req.params.id));
@@ -117,12 +103,9 @@ app.delete('/api/agents/:id', (req, res) => {
   res.json({ message: 'Agent deleted', agent: deleted[0] });
 });
 
-// Fallback
-app.use((req, res) => {
-  res.status(404).json({ error: 'Endpoint not found' });
-});
+// ---------- Fallbacks ----------
+app.use('/api/*', (req, res) => res.status(404).json({ error: 'API endpoint not found' }));
+app.get('*', (req, res) => res.sendFile(path.join(FRONTEND_PATH, 'index.html')));
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// ---------- Start server ----------
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
