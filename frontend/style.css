@@ -1,5 +1,9 @@
 :root {
-  --bg: linear-gradient(135deg, #f9fbfd, #eef2f9);
+  --bg1: linear-gradient(135deg, #f9fbfd, #eef2f9);
+  --bg2: linear-gradient(135deg, #ffe7e7, #ffd6d6);
+  --bg3: linear-gradient(135deg, #e0f7fa, #b2ebf2);
+  --bg: var(--bg1); /* default */
+}
   --card: rgba(255, 255, 255, 0.75); /* glass effect */
   --muted: #6b7280;
   --accent: #2563eb;
