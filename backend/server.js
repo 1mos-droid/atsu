@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 5000;
 
 // ---------- Paths ----------
 const DATA_FILE = path.join(__dirname, 'agents.json'); // backend/agents.json
-const FRONTEND_PATH = path.join(__dirname, '..', 'frontend'); // frontend folder is one level up
+const FRONTEND_PATH = path.join(__dirname, '../frontend'); // frontend folder is one level up
 
 // ---------- Middleware ----------
 app.use(cors());
