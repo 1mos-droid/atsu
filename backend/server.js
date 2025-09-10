@@ -7,7 +7,9 @@ const fs = require("fs");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// ---------------------------
 // Middleware
+// ---------------------------
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -34,21 +36,28 @@ function writeJsonData(data) {
 }
 
 // ---------------------------
-// Login Route
+// LOGIN ENDPOINT
 // ---------------------------
 app.post("/api/login", (req, res) => {
   const { email, password } = req.body;
 
-  // Hardcoded login
+  // Hardcoded login credentials
   if (email === "datnova@gmail.com" && password === "datnova@999") {
-    return res.json({ success: true, message: "Login successful" });
+    return res.json({
+      success: true,
+      message: "Login successful",
+      user: { email }, // Return user info
+    });
   } else {
-    return res.status(401).json({ success: false, message: "Invalid credentials" });
+    return res.status(401).json({
+      success: false,
+      message: "Invalid credentials",
+    });
   }
 });
 
 // ---------------------------
-// API Routes (agents)
+// API ROUTES (Agents CRUD)
 // ---------------------------
 
 // Get all agents
@@ -130,13 +139,15 @@ app.delete("/api/agents/:id", (req, res) => {
 });
 
 // ---------------------------
-// Catch-all: always serve login.html first
+// Catch-all: always serve login.html for unknown routes
 // ---------------------------
 app.use((req, res) => {
   res.sendFile(path.join(__dirname, "../frontend", "login.html"));
 });
 
+// ---------------------------
 // Start server
+// ---------------------------
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
