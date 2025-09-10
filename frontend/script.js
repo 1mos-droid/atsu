@@ -6,7 +6,7 @@
 const API_BASE_URL =
   window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:5000/api/"
-    : "https://atsu-4.onrender.com/api/"; // 🔹 replace with your actual Render URL
+    : "https://atsu-4.onrender.com/api/";
 
 // ---------- Alert helper ----------
 function showAlert(message, type = 'success') {
@@ -24,7 +24,7 @@ function showAlert(message, type = 'success') {
   setTimeout(() => el.remove(), 3000);
 }
 
-// ---------- Utility: API request ----------
+// ---------- API request ----------
 async function request(url, opts = {}) {
   try {
     const res = await fetch(url, {
@@ -293,24 +293,44 @@ function init() {
   if (page === 'login') document.getElementById("loginForm").addEventListener("submit", handleLogin);
   if (page === 'logout') logout();
 
-  // sidebar toggle
+  // ---------------- Sidebar ----------------
   const menuToggle = document.getElementById('menu-toggle');
   const sidebar = document.querySelector('.sidebar');
   const body = document.body;
+
   if (menuToggle && sidebar) {
-    menuToggle.addEventListener('click', () => {
+    menuToggle.addEventListener('click', e => {
+      e.stopPropagation(); // prevent body click from closing immediately
       sidebar.classList.toggle('open');
       body.classList.toggle('sidebar-open');
     });
-    body.addEventListener('click', e => {
-      if (body.classList.contains('sidebar-open') &&
+
+    document.addEventListener('click', e => {
+      if (sidebar.classList.contains('open') &&
         !sidebar.contains(e.target) &&
-        !menuToggle.contains(e.target)) {
+        !menuToggle.contains(e.target)
+      ) {
+        sidebar.classList.remove('open');
+        body.classList.remove('sidebar-open');
+      }
+    });
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && sidebar.classList.contains('open')) {
         sidebar.classList.remove('open');
         body.classList.remove('sidebar-open');
       }
     });
   }
 
-  // nav highlight
-  const navLinks = document.querySelectorAll('.nav
+  // ---------------- Navigation Highlight ----------------
+  const navLinks = document.querySelectorAll('.nav-link');
+  const currentPage = window.location.pathname.split('/').pop();
+  navLinks.forEach(link => {
+    if (link.getAttribute('href') === currentPage) link.classList.add('active');
+    else link.classList.remove('active');
+  });
+
+  // ---------------- Auto background ----------------
+  const backgrounds = [
+    "linear-gradient(135deg, #f9fbfd, #eef
