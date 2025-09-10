@@ -27,12 +27,8 @@ function showAlert(message, type = 'success') {
 // ---------- API request ----------
 async function request(url, opts = {}) {
   try {
-    // default headers, merged with any provided in opts
     const headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
-    const res = await fetch(url, {
-      ...opts,
-      headers,
-    });
+    const res = await fetch(url, { ...opts, headers });
     if (!res.ok) {
       const txt = await res.text();
       throw new Error(`Request failed (${res.status}): ${txt}`);
@@ -47,7 +43,6 @@ async function request(url, opts = {}) {
 
 // ---------- Auth ----------
 function requireAuth(page) {
-  // `page` may be undefined on some pages; in that case, do nothing
   const user = JSON.parse(localStorage.getItem("user") || "null");
   if (!user && page !== "login" && page !== "logout") {
     window.location.href = "login.html";
@@ -259,52 +254,26 @@ async function handleLogin(e) {
   const email = emailEl ? emailEl.value : '';
   const password = passwordEl ? passwordEl.value : '';
 
-  try {
-    const data = await request(API_BASE_URL + "login", {
-      method: "POST",
-      body: JSON.stringify({ email, password }),
-    });
-
-    // Defensive: if API returns a token and/or user, keep both where possible
-    if (data && data.user) {
-      localStorage.setItem("user", JSON.stringify(data.user));
-    } else if (data && data.token) {
-      localStorage.setItem("user", JSON.stringify({ token: data.token }));
-    } else {
-      localStorage.setItem("user", JSON.stringify(data));
-    }
-
+  // Hardcoded login check
+  if (email === "datnova@gmail.com" && password === "datnova@999") {
+    localStorage.setItem("user", JSON.stringify({ email }));
     window.location.href = "index.html";
-  } catch (err) {
-    if (errorEl) errorEl.textContent = err.message || "Login failed.";
-    else showAlert(err.message || 'Login failed', 'error');
+  } else {
+    if (errorEl) errorEl.textContent = "Invalid login credentials";
+    else showAlert("Invalid login credentials", "error");
   }
 }
 
 // ---------- Helpers ----------
 function fillForm(a) {
-  const setIf = (id, val) => {
-    const el = document.getElementById(id);
-    if (el) el.value = val || '';
-  };
-  setIf('full_name', a.full_name);
-  setIf('email', a.email);
-  setIf('phone', a.phone);
-  setIf('address', a.address);
-  setIf('role', a.role);
-  setIf('department', a.department);
-
+  const setIf = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+  setIf('full_name', a.full_name); setIf('email', a.email); setIf('phone', a.phone); setIf('address', a.address);
+  setIf('role', a.role); setIf('department', a.department);
   const statusInactive = document.getElementById('status-inactive');
   const statusActive = document.getElementById('status-active');
-  if ((a.status || '').toLowerCase() === 'inactive') {
-    if (statusInactive) statusInactive.checked = true;
-  } else {
-    if (statusActive) statusActive.checked = true;
-  }
-  if (a.date_of_joining) {
-    const dojEl = document.getElementById('date_of_joining');
-    if (dojEl) dojEl.value = a.date_of_joining.split('T')[0];
-  }
+  if ((a.status || '').toLowerCase() === 'inactive') if (statusInactive) statusInactive.checked = true;
+  else if (statusActive) statusActive.checked = true;
+  if (a.date_of_joining) { const dojEl = document.getElementById('date_of_joining'); if (dojEl) dojEl.value = a.date_of_joining.split('T')[0]; }
 }
 
 function readForm() {
@@ -330,7 +299,7 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
-// ---------- Auto Background (completed) ----------
+// ---------- Auto Background ----------
 const backgrounds = [
   "linear-gradient(135deg, #f9fbfd, #eef2ff)",
   "linear-gradient(135deg, #fffbeb, #fff1f2)",
@@ -338,27 +307,42 @@ const backgrounds = [
   "linear-gradient(135deg, #f0f9ff, #eff6ff)",
   "linear-gradient(135deg, #fff7ed, #fff1f2)"
 ];
-
 let bgIndex = 0;
 function cycleBackground() {
-  try {
-    document.body.style.backgroundImage = backgrounds[bgIndex % backgrounds.length];
-    bgIndex++;
-  } catch (e) {
-    // ignore if body not ready
-  }
+  try { document.body.style.backgroundImage = backgrounds[bgIndex % backgrounds.length]; bgIndex++; } catch (e) {}
 }
-// Start background and change every 10s (safe-guarded)
-setTimeout(() => {
-  cycleBackground();
-  try {
-    window.setInterval(cycleBackground, 10000);
-  } catch (e) {}
-}, 0);
+setTimeout(() => { cycleBackground(); window.setInterval(cycleBackground, 10000); }, 0);
+
+// ---------- Dark/Light Mode ----------
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('theme', theme);
+}
+function toggleTheme() {
+  const current = localStorage.getItem('theme') || 'light';
+  applyTheme(current === 'light' ? 'dark' : 'light');
+}
+function addThemeToggleButton() {
+  const btn = document.createElement('button');
+  btn.id = 'theme-toggle';
+  btn.textContent = '🌓';
+  Object.assign(btn.style, {
+    position: 'fixed', bottom: '20px', right: '20px', padding: '10px 14px',
+    borderRadius: '50%', border: 'none', cursor: 'pointer', zIndex: 9999,
+    backgroundColor: '#0077ff', color: '#fff', boxShadow: '0 2px 6px rgba(0,0,0,0.3)', fontSize: '18px'
+  });
+  btn.addEventListener('click', toggleTheme);
+  document.body.appendChild(btn);
+}
 
 // ---------- Init ----------
 function init() {
   const page = document.body ? document.body.dataset.page : undefined;
+
+  // Apply persisted theme
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  applyTheme(savedTheme);
+  addThemeToggleButton();
 
   requireAuth(page);
 
@@ -366,13 +350,11 @@ function init() {
 
   if (page === 'agents') {
     loadAgents();
-
     const searchEl = document.getElementById('search');
     const roleFilter = document.getElementById('filter-role');
     const deptFilter = document.getElementById('filter-dept');
     const statusFilter = document.getElementById('filter-status');
     const agentsTbody = document.querySelector('#agents-table tbody');
-
     if (searchEl) searchEl.addEventListener('input', applySearchAndFilters);
     if (roleFilter) roleFilter.addEventListener('change', applySearchAndFilters);
     if (deptFilter) deptFilter.addEventListener('change', applySearchAndFilters);
@@ -381,62 +363,9 @@ function init() {
   }
 
   if (page === 'form') setupFormPage();
-
-  if (page === 'login') {
-    const loginForm = document.getElementById("loginForm");
-    if (loginForm) loginForm.addEventListener("submit", handleLogin);
-  }
-
+  if (page === 'login') { const loginForm = document.getElementById("loginForm"); if (loginForm) loginForm.addEventListener("submit", handleLogin); }
   if (page === 'logout') logout();
 
-  // ---------------- Sidebar ----------------
+  // Sidebar toggle
   const menuToggle = document.getElementById('menu-toggle');
-  const sidebar = document.querySelector('.sidebar');
-  const body = document.body;
-
-  if (menuToggle && sidebar && body) {
-    // Toggle sidebar open/close
-    menuToggle.addEventListener('click', e => {
-      e.stopPropagation(); // prevent body click from closing immediately
-      const isOpen = sidebar.classList.toggle('open');
-      body.classList.toggle('sidebar-open', isOpen);
-    });
-
-    // Close sidebar when clicking outside
-    document.addEventListener('click', e => {
-      if (!sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
-        sidebar.classList.remove('open');
-        body.classList.remove('sidebar-open');
-      }
-    });
-
-    // Close sidebar on ESC
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape') {
-        sidebar.classList.remove('open');
-        body.classList.remove('sidebar-open');
-      }
-    });
-
-    // Optional: Start sidebar closed
-    sidebar.classList.remove('open');
-    body.classList.remove('sidebar-open');
-  }
-
-  // ---------------- Navigation Highlight ----------------
-  const navLinks = document.querySelectorAll('.nav-link');
-  const currentPage = window.location.pathname.split('/').pop();
-  if (navLinks && navLinks.forEach) {
-    navLinks.forEach(link => {
-      if (link.getAttribute('href') === currentPage) link.classList.add('active');
-      else link.classList.remove('active');
-    });
-  }
-}
-
-// Run init once DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
-} else {
-  init();
-}
+  const sidebar = document.querySelector('.sidebar
