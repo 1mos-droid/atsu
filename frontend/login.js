@@ -1,8 +1,12 @@
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+  const errorEl = document.getElementById("error");
+
+  // Clear previous error
+  if (errorEl) errorEl.textContent = "";
 
   try {
     const res = await fetch("/api/login", {
@@ -14,15 +18,16 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     const data = await res.json();
 
     if (res.ok) {
-      // ✅ Use sessionStorage (clears automatically when tab/browser closes)
-      sessionStorage.setItem("user", JSON.stringify(data.user));
+      // ✅ Store user data in localStorage (persistent until logout)
+      localStorage.setItem("user", JSON.stringify({ email }));
 
       // Redirect to dashboard
       window.location.href = "index.html";
     } else {
-      document.getElementById("error").textContent = data.error;
+      errorEl.textContent = data.message || "Invalid credentials.";
     }
   } catch (err) {
-    document.getElementById("error").textContent = "Server error.";
+    errorEl.textContent = "Server error. Please try again later.";
+    console.error("Login error:", err);
   }
 });
