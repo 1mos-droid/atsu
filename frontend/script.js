@@ -1,6 +1,4 @@
-/* script.js — handles all pages (fixed) */
-
-// 🌍 Auto-detect API URL (local vs production) const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" ? "http://localhost:5000/api/" : "https://atsu-4.onrender.com/api/";
+ const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" ? "http://localhost:5000/api/" : "https://atsu-4.onrender.com/api/";
 
 // ---------- Alert helper ---------- function showAlert(message, type = 'success', duration = 3000) { const el = document.createElement('div'); el.textContent = message; el.style.position = 'fixed'; el.style.right = '20px'; el.style.top = '20px'; el.style.padding = '10px 14px'; el.style.borderRadius = '8px'; el.style.zIndex = 9999; el.style.background = type === 'error' ? '#fee2e2' : '#ecfeff'; el.style.color = type === 'error' ? '#991b1b' : '#064e3b'; el.style.boxShadow = '0 6px 18px rgba(0,0,0,0.06)'; document.body.appendChild(el); setTimeout(() => el.remove(), duration); }
 
