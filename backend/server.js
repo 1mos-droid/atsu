@@ -18,6 +18,7 @@ app.use(express.static(FRONTEND_PATH)); // serve frontend files
 
 // ---------- Helpers ----------
 function readAgents() {
+  if (!fs.existsSync(DATA_FILE)) return []; // handle missing file
   try {
     const data = fs.readFileSync(DATA_FILE, 'utf-8');
     return JSON.parse(data || '[]');
@@ -45,6 +46,8 @@ const USERS = [
 // ---------- API Routes ----------
 app.post('/api/login', (req, res) => {
   const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+
   const user = USERS.find(u => u.email === email && u.password === password);
   if (!user) return res.status(401).json({ error: 'Invalid email or password' });
 
@@ -53,13 +56,11 @@ app.post('/api/login', (req, res) => {
 });
 
 app.get('/api/agents', (req, res) => {
-  const agents = readAgents();
-  res.json(agents);
+  res.json(readAgents());
 });
 
 app.get('/api/agents/:id', (req, res) => {
-  const agents = readAgents();
-  const agent = agents.find(a => String(a.id) === String(req.params.id));
+  const agent = readAgents().find(a => String(a.id) === String(req.params.id));
   if (!agent) return res.status(404).json({ error: 'Agent not found' });
   res.json(agent);
 });
@@ -87,10 +88,9 @@ app.put('/api/agents/:id', (req, res) => {
   const index = agents.findIndex(a => String(a.id) === String(req.params.id));
   if (index === -1) return res.status(404).json({ error: 'Agent not found' });
 
-  const updated = { ...agents[index], ...req.body, id: agents[index].id };
-  agents[index] = updated;
+  agents[index] = { ...agents[index], ...req.body, id: agents[index].id };
   writeAgents(agents);
-  res.json(updated);
+  res.json(agents[index]);
 });
 
 app.delete('/api/agents/:id', (req, res) => {
@@ -98,9 +98,9 @@ app.delete('/api/agents/:id', (req, res) => {
   const index = agents.findIndex(a => String(a.id) === String(req.params.id));
   if (index === -1) return res.status(404).json({ error: 'Agent not found' });
 
-  const deleted = agents.splice(index, 1);
+  const deleted = agents.splice(index, 1)[0];
   writeAgents(agents);
-  res.json({ message: 'Agent deleted', agent: deleted[0] });
+  res.json({ message: 'Agent deleted', agent: deleted });
 });
 
 // ---------- Fallbacks ----------
