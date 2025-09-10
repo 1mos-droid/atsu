@@ -8,15 +8,17 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // ---------- Paths ----------
-const DATA_FILE = path.join(__dirname, 'agents.json'); // backend/agents.json
-const FRONTEND_PATH = path.join(__dirname, '../frontend'); // frontend folder is one level up
+const DATA_FILE = path.join(__dirname, 'agents.json');
+const FRONTEND_PATH = path.join(__dirname, '../frontend');
 
 // ---------- Middleware ----------
 app.use(cors());
-app.use(express.json()); // replaces body-parser
-app.use(express.static(FRONTEND_PATH)); // serve frontend files
+app.use(express.json()); 
+app.use(express.static(FRONTEND_PATH)); 
 
 // ---------- Helpers ----------
+const generateId = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+
 const readAgents = () => {
   if (!fs.existsSync(DATA_FILE)) return [];
   try {
@@ -91,17 +93,23 @@ app.get('/api/agents/:id', (req, res) => {
 // Create new agent
 app.post('/api/agents', (req, res) => {
   try {
+    const { full_name, email, phone, address, role, department, status, date_of_joining } = req.body;
+
+    if (!full_name || !email) {
+      return res.status(400).json({ error: 'Full name and email are required' });
+    }
+
     const agents = readAgents();
     const newAgent = {
-      id: crypto.randomUUID(), // safer unique ID
-      full_name: req.body.full_name || '',
-      email: req.body.email || '',
-      phone: req.body.phone || '',
-      address: req.body.address || '',
-      role: req.body.role || '',
-      department: req.body.department || '',
-      status: req.body.status || 'active',
-      date_of_joining: req.body.date_of_joining || null
+      id: generateId(),
+      full_name,
+      email,
+      phone: phone || '',
+      address: address || '',
+      role: role || '',
+      department: department || '',
+      status: status || 'active',
+      date_of_joining: date_of_joining || null
     };
 
     agents.push(newAgent);
@@ -109,6 +117,7 @@ app.post('/api/agents', (req, res) => {
 
     res.status(201).json(newAgent);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Failed to create agent' });
   }
 });
@@ -128,6 +137,7 @@ app.put('/api/agents/:id', (req, res) => {
 
     res.json(agents[index]);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Failed to update agent' });
   }
 });
@@ -147,6 +157,7 @@ app.delete('/api/agents/:id', (req, res) => {
 
     res.json({ message: 'Agent deleted successfully', agent: deletedAgent });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Failed to delete agent' });
   }
 });
