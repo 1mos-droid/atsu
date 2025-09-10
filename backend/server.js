@@ -3,7 +3,6 @@ const db = require("./db");
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
-const fs = require("fs");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -16,28 +15,11 @@ app.use(express.urlencoded({ extended: true }));
 // Serve frontend (from "../frontend" folder)
 app.use(express.static(path.join(__dirname, "../frontend")));
 
-// Path to JSON file
-const jsonFilePath = path.join(__dirname, "agent.json");
-
-// Helper: read all agents from JSON
-function readJsonData() {
-  if (fs.existsSync(jsonFilePath)) {
-    const fileContent = fs.readFileSync(jsonFilePath, "utf-8");
-    return fileContent ? JSON.parse(fileContent) : [];
-  }
-  return [];
-}
-
-// Helper: write all agents to JSON
-function writeJsonData(data) {
-  fs.writeFileSync(jsonFilePath, JSON.stringify(data, null, 2), "utf-8");
-}
-
 // ========================
 // API Routes
 // ========================
 
-// Simple login route (replace with real DB later)
+// Simple login route (still demo, you can connect this to DB later)
 app.post("/api/login", (req, res) => {
   const { email, password } = req.body;
 
@@ -50,82 +32,86 @@ app.post("/api/login", (req, res) => {
   }
 });
 
+// ========================
+// Agents CRUD with Supabase/Postgres
+// ========================
+
 // Get all agents
-app.get("/api/agents", (req, res) => {
-  const agents = readJsonData();
-  res.json(agents);
+app.get("/api/agents", async (req, res) => {
+  try {
+    const { rows } = await db.query("SELECT * FROM agents ORDER BY id ASC");
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Database error" });
+  }
 });
 
 // Get single agent
-app.get("/api/agents/:id", (req, res) => {
-  const { id } = req.params;
-  const agents = readJsonData();
-  const agent = agents.find((a) => a.id === parseInt(id));
-  if (!agent) return res.status(404).json({ error: "Agent not found" });
-  res.json(agent);
+app.get("/api/agents/:id", async (req, res) => {
+  try {
+    const { rows } = await db.query("SELECT * FROM agents WHERE id = $1", [
+      req.params.id,
+    ]);
+    if (rows.length === 0)
+      return res.status(404).json({ error: "Agent not found" });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Database error" });
+  }
 });
 
 // Add new agent
-app.post("/api/agents", (req, res) => {
+app.post("/api/agents", async (req, res) => {
   const { full_name, email, phone, role, department, status } = req.body;
-
-  let agents = readJsonData();
-  const newAgent = {
-    id: agents.length > 0 ? agents[agents.length - 1].id + 1 : 1,
-    full_name,
-    email,
-    phone,
-    role,
-    department,
-    status,
-  };
-
-  agents.push(newAgent);
-  writeJsonData(agents);
-
-  res.json(newAgent);
+  try {
+    const { rows } = await db.query(
+      `INSERT INTO agents (full_name, email, phone, role, department, status)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [full_name, email, phone, role, department, status]
+    );
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Database error" });
+  }
 });
 
 // Update agent
-app.put("/api/agents/:id", (req, res) => {
-  const { id } = req.params;
+app.put("/api/agents/:id", async (req, res) => {
   const { full_name, email, phone, role, department, status } = req.body;
-
-  let agents = readJsonData();
-  let agentIndex = agents.findIndex((a) => a.id === parseInt(id));
-
-  if (agentIndex === -1) {
-    return res.status(404).json({ error: "Agent not found" });
+  try {
+    const { rows } = await db.query(
+      `UPDATE agents
+       SET full_name = $1, email = $2, phone = $3, role = $4, department = $5, status = $6
+       WHERE id = $7
+       RETURNING *`,
+      [full_name, email, phone, role, department, status, req.params.id]
+    );
+    if (rows.length === 0)
+      return res.status(404).json({ error: "Agent not found" });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Database error" });
   }
-
-  agents[agentIndex] = {
-    id: parseInt(id),
-    full_name,
-    email,
-    phone,
-    role,
-    department,
-    status,
-  };
-
-  writeJsonData(agents);
-
-  res.json(agents[agentIndex]);
 });
 
 // Delete agent
-app.delete("/api/agents/:id", (req, res) => {
-  const { id } = req.params;
-  let agents = readJsonData();
-
-  const newAgents = agents.filter((a) => a.id !== parseInt(id));
-
-  if (newAgents.length === agents.length) {
-    return res.status(404).json({ error: "Agent not found" });
+app.delete("/api/agents/:id", async (req, res) => {
+  try {
+    const { rowCount } = await db.query("DELETE FROM agents WHERE id = $1", [
+      req.params.id,
+    ]);
+    if (rowCount === 0)
+      return res.status(404).json({ error: "Agent not found" });
+    res.json({ message: "Agent deleted successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Database error" });
   }
-
-  writeJsonData(newAgents);
-  res.json({ message: "Agent deleted successfully" });
 });
 
 // ========================
