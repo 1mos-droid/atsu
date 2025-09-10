@@ -21,17 +21,21 @@ function showAlert(message, type = 'success') {
 
 // ---------- Utility: API request ----------
 async function request(url, opts = {}) {
-  const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json' },
-    ...opts
-  });
-  if (!res.ok) {
-    const txt = await res.text();
-    throw new Error(txt || res.statusText);
+  try {
+    const res = await fetch(url, {
+      headers: { 'Content-Type': 'application/json' },
+      ...opts
+    });
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(`Request failed (${res.status}): ${txt}`);
+    }
+    const contentType = res.headers.get('content-type') || '';
+    return contentType.includes('application/json') ? await res.json() : await res.text();
+  } catch (err) {
+    console.error("API error:", err);
+    throw err;
   }
-  const contentType = res.headers.get('content-type') || '';
-  if (contentType.includes('application/json')) return await res.json();
-  return await res.text();
 }
 
 // ---------- Auth ----------
@@ -326,6 +330,18 @@ function init() {
       link.classList.add('active');
     }
   });
+
+  // 🎨 auto background switch
+  const backgrounds = [
+    "linear-gradient(135deg, #f9fbfd, #eef2f9)",
+    "linear-gradient(135deg, #fff7ed, #fde68a)",
+    "linear-gradient(135deg, #f0fdfa, #99f6e4)"
+  ];
+  let current = 0;
+  setInterval(() => {
+    current = (current + 1) % backgrounds.length;
+    document.documentElement.style.setProperty("--bg", backgrounds[current]);
+  }, 5000);
 }
 
 if (document.readyState === 'loading') {
