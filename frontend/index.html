@@ -14,7 +14,7 @@
       <a href="index.html" class="nav-link active">🏠 <span>Dashboard</span></a>
       <a href="form.html" class="nav-link">➕ <span>Add Agent</span></a>
       <a href="agents.html" class="nav-link">📋 <span>View Agents</span></a>
-<a href="logout.html" class="nav-link">Logout</a>
+      <a href="logout.html" class="nav-link">🚪 Logout</a>
     </nav>
   </aside>
 
@@ -26,7 +26,6 @@
         <button class="menu-toggle" id="menu-toggle">☰</button>
         <h1>Dashboard</h1>
       </div>
-    
     </header>
 
     <section class="container">
@@ -70,13 +69,15 @@
       </div>
     </section>
   </main>
-<script>
-  // If no user is logged in for this session, redirect to login.html
-  const user = sessionStorage.getItem("user");
-  if (!user) {
-    window.location.href = "login.html";
-  }
-</script>
+
+  <!-- Auth Check (using localStorage only) -->
+  <script>
+    const user = localStorage.getItem("user");
+    if (!user) {
+      window.location.href = "login.html";
+    }
+  </script>
+
   <script src="script.js"></script>
 </body>
 </html>
