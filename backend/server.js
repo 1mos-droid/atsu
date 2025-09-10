@@ -1,180 +1,127 @@
-const express = require('express');
-const fs = require('fs');
-const path = require('path');
-const cors = require('cors');
-const crypto = require('crypto');
+// server.js
+const express = require("express");
+const cors = require("cors");
+const path = require("path");
+const fs = require("fs");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ---------- Paths ----------
-const DATA_FILE = path.join(__dirname, 'agents.json');
-const FRONTEND_PATH = path.join(__dirname, '../frontend');
-
-// ---------- Middleware ----------
+// Middleware
 app.use(cors());
-app.use(express.json()); 
-app.use(express.static(FRONTEND_PATH)); 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// ---------- Helpers ----------
-const generateId = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+// Serve frontend (from "../frontend" folder)
+app.use(express.static(path.join(__dirname, "../frontend")));
 
-const readAgents = () => {
-  if (!fs.existsSync(DATA_FILE)) return [];
-  try {
-    const data = fs.readFileSync(DATA_FILE, 'utf-8');
-    return JSON.parse(data || '[]');
-  } catch (err) {
-    console.error('Error reading agents.json:', err);
-    return [];
+// Path to JSON file
+const jsonFilePath = path.join(__dirname, "agent.json");
+
+// Helper: read all agents from JSON
+function readJsonData() {
+  if (fs.existsSync(jsonFilePath)) {
+    const fileContent = fs.readFileSync(jsonFilePath, "utf-8");
+    return fileContent ? JSON.parse(fileContent) : [];
   }
-};
+  return [];
+}
 
-const writeAgents = (agents) => {
-  try {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(agents, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('Error writing agents.json:', err);
-    throw err;
-  }
-};
+// Helper: write all agents to JSON
+function writeJsonData(data) {
+  fs.writeFileSync(jsonFilePath, JSON.stringify(data, null, 2), "utf-8");
+}
 
-// ---------- Hardcoded Users ----------
-const USERS = [
-  { id: 1, email: 'admin@example.com', password: 'admin123', name: 'Admin User' },
-  { id: 2, email: 'user@example.com', password: 'user123', name: 'Regular User' }
-];
-
-// ---------- API Routes ----------
-
-// Login
-app.post('/api/login', (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password are required' });
-  }
-
-  const user = USERS.find(u => u.email === email && u.password === password);
-  if (!user) {
-    return res.status(401).json({ error: 'Invalid email or password' });
-  }
-
-  const { password: _, ...userSafe } = user;
-  res.json({ user: userSafe });
-});
+// ========================
+// API Routes
+// ========================
 
 // Get all agents
-app.get('/api/agents', (req, res) => {
-  try {
-    const agents = readAgents();
-    res.json(agents);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch agents' });
-  }
+app.get("/api/agents", (req, res) => {
+  const agents = readJsonData();
+  res.json(agents);
 });
 
-// Get agent by ID
-app.get('/api/agents/:id', (req, res) => {
-  try {
-    const agents = readAgents();
-    const agent = agents.find(a => String(a.id) === String(req.params.id));
-
-    if (!agent) {
-      return res.status(404).json({ error: 'Agent not found' });
-    }
-
-    res.json(agent);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch agent' });
-  }
+// Get single agent
+app.get("/api/agents/:id", (req, res) => {
+  const { id } = req.params;
+  const agents = readJsonData();
+  const agent = agents.find((a) => a.id === parseInt(id));
+  if (!agent) return res.status(404).json({ error: "Agent not found" });
+  res.json(agent);
 });
 
-// Create new agent
-app.post('/api/agents', (req, res) => {
-  try {
-    const { full_name, email, phone, address, role, department, status, date_of_joining } = req.body;
+// Add new agent
+app.post("/api/agents", (req, res) => {
+  const { full_name, email, phone, role, department, status } = req.body;
 
-    if (!full_name || !email) {
-      return res.status(400).json({ error: 'Full name and email are required' });
-    }
+  let agents = readJsonData();
+  const newAgent = {
+    id: agents.length > 0 ? agents[agents.length - 1].id + 1 : 1,
+    full_name,
+    email,
+    phone,
+    role,
+    department,
+    status,
+  };
 
-    const agents = readAgents();
-    const newAgent = {
-      id: generateId(),
-      full_name,
-      email,
-      phone: phone || '',
-      address: address || '',
-      role: role || '',
-      department: department || '',
-      status: status || 'active',
-      date_of_joining: date_of_joining || null
-    };
+  agents.push(newAgent);
+  writeJsonData(agents);
 
-    agents.push(newAgent);
-    writeAgents(agents);
-
-    res.status(201).json(newAgent);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to create agent' });
-  }
+  res.json(newAgent);
 });
 
 // Update agent
-app.put('/api/agents/:id', (req, res) => {
-  try {
-    const agents = readAgents();
-    const index = agents.findIndex(a => String(a.id) === String(req.params.id));
+app.put("/api/agents/:id", (req, res) => {
+  const { id } = req.params;
+  const { full_name, email, phone, role, department, status } = req.body;
 
-    if (index === -1) {
-      return res.status(404).json({ error: 'Agent not found' });
-    }
+  let agents = readJsonData();
+  let agentIndex = agents.findIndex((a) => a.id === parseInt(id));
 
-    agents[index] = { ...agents[index], ...req.body, id: agents[index].id };
-    writeAgents(agents);
-
-    res.json(agents[index]);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to update agent' });
+  if (agentIndex === -1) {
+    return res.status(404).json({ error: "Agent not found" });
   }
+
+  agents[agentIndex] = {
+    id: parseInt(id),
+    full_name,
+    email,
+    phone,
+    role,
+    department,
+    status,
+  };
+
+  writeJsonData(agents);
+
+  res.json(agents[agentIndex]);
 });
 
 // Delete agent
-app.delete('/api/agents/:id', (req, res) => {
-  try {
-    const agents = readAgents();
-    const index = agents.findIndex(a => String(a.id) === String(req.params.id));
+app.delete("/api/agents/:id", (req, res) => {
+  const { id } = req.params;
+  let agents = readJsonData();
 
-    if (index === -1) {
-      return res.status(404).json({ error: 'Agent not found' });
-    }
+  const newAgents = agents.filter((a) => a.id !== parseInt(id));
 
-    const deletedAgent = agents.splice(index, 1)[0];
-    writeAgents(agents);
-
-    res.json({ message: 'Agent deleted successfully', agent: deletedAgent });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to delete agent' });
+  if (newAgents.length === agents.length) {
+    return res.status(404).json({ error: "Agent not found" });
   }
+
+  writeJsonData(newAgents);
+  res.json({ message: "Agent deleted successfully" });
 });
 
-// ---------- Fallbacks ----------
-// Handle all unmatched API routes
-app.all('/api/*', (req, res) => res.status(404).json({ error: 'API endpoint not found' }));
-
-// Serve frontend for all other routes
-app.get('*', (req, res) => {
-  const indexPath = path.join(FRONTEND_PATH, 'index.html');
-  if (fs.existsSync(indexPath)) {
-    res.sendFile(indexPath);
-  } else {
-    res.status(404).send('Frontend not found');
-  }
+// ========================
+// Catch-all: serve frontend index.html
+// ========================
+app.use((req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend", "index.html"));
 });
 
-// ---------- Start server ----------
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+// Start server
+app.listen(PORT, () => {
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
+});
