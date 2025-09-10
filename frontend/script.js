@@ -293,35 +293,39 @@ function init() {
   if (page === 'login') document.getElementById("loginForm").addEventListener("submit", handleLogin);
   if (page === 'logout') logout();
 
-  // ---------------- Sidebar ----------------
-  const menuToggle = document.getElementById('menu-toggle');
-  const sidebar = document.querySelector('.sidebar');
-  const body = document.body;
+ // ---------------- Sidebar ----------------
+const menuToggle = document.getElementById('menu-toggle');
+const sidebar = document.querySelector('.sidebar');
+const body = document.body;
 
-  if (menuToggle && sidebar) {
-    menuToggle.addEventListener('click', e => {
-      e.stopPropagation(); // prevent body click from closing immediately
-      sidebar.classList.toggle('open');
-      body.classList.toggle('sidebar-open');
-    });
+if (menuToggle && sidebar) {
+  // Toggle sidebar open/close
+  menuToggle.addEventListener('click', e => {
+    e.stopPropagation(); // prevent body click from closing immediately
+    const isOpen = sidebar.classList.toggle('open');
+    body.classList.toggle('sidebar-open', isOpen);
+  });
 
-    document.addEventListener('click', e => {
-      if (sidebar.classList.contains('open') &&
-        !sidebar.contains(e.target) &&
-        !menuToggle.contains(e.target)
-      ) {
-        sidebar.classList.remove('open');
-        body.classList.remove('sidebar-open');
-      }
-    });
+  // Close sidebar when clicking outside
+  document.addEventListener('click', e => {
+    if (!sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
+      sidebar.classList.remove('open');
+      body.classList.remove('sidebar-open');
+    }
+  });
 
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && sidebar.classList.contains('open')) {
-        sidebar.classList.remove('open');
-        body.classList.remove('sidebar-open');
-      }
-    });
-  }
+  // Close sidebar on ESC
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      sidebar.classList.remove('open');
+      body.classList.remove('sidebar-open');
+    }
+  });
+}
+
+// Optional: Start sidebar closed
+sidebar.classList.remove('open');
+body.classList.remove('sidebar-open');
 
   // ---------------- Navigation Highlight ----------------
   const navLinks = document.querySelectorAll('.nav-link');
