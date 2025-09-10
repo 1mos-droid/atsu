@@ -68,11 +68,8 @@ async function handleLogin(event) {
     });
 
     if (res.success) {
-      // Save user to localStorage
       localStorage.setItem("user", JSON.stringify(res.user));
       showAlert("Login successful!");
-
-      // Redirect to dashboard
       window.location.href = "index.html";
     } else {
       showAlert("Invalid credentials", "error");
@@ -92,35 +89,33 @@ function escapeHtml(str) {
     .replace(/'/g, "&#039;");
 }
 
-function fillForm(a) {
+function fillForm(agent) {
+  document.getElementById('agent_id').value = agent.id || '';
+
   const setIf = (id, val) => {
     const el = document.getElementById(id);
     if (el) el.value = val || '';
   };
-  setIf('full_name', a.full_name);
-  setIf('email', a.email);
-  setIf('phone', a.phone);
-  setIf('address', a.address);
-  setIf('role', a.role);
-  setIf('department', a.department);
+  setIf('full_name', agent.full_name);
+  setIf('email', agent.email);
+  setIf('phone', agent.phone);
+  setIf('address', agent.address);
+  setIf('role', agent.role);
+  setIf('department', agent.department);
 
-  const statusInactive = document.getElementById('status-inactive');
-  const statusActive = document.getElementById('status-active');
-  if ((a.status || '').toLowerCase() === 'inactive') {
-    if (statusInactive) statusInactive.checked = true;
-  } else {
-    if (statusActive) statusActive.checked = true;
-  }
+  document.getElementById('status-active').checked = (agent.status || '').toLowerCase() === 'active';
+  document.getElementById('status-inactive').checked = (agent.status || '').toLowerCase() === 'inactive';
 
-  if (a.date_of_joining) {
+  if (agent.date_of_joining) {
     const dojEl = document.getElementById('date_of_joining');
-    if (dojEl) dojEl.value = a.date_of_joining.split('T')[0];
+    if (dojEl) dojEl.value = agent.date_of_joining.split('T')[0];
   }
 }
 
 function readForm() {
   const statusEl = document.querySelector('input[name="status"]:checked');
   return {
+    id: document.getElementById('agent_id').value || null,
     full_name: (document.getElementById('full_name') || {}).value || '',
     email: (document.getElementById('email') || {}).value || '',
     phone: (document.getElementById('phone') || {}).value || '',
@@ -132,31 +127,55 @@ function readForm() {
   };
 }
 
-// ---------- Save Agent ----------
+// ---------- Save Agent (Add or Update) ----------
 async function saveAgent(agent) {
   try {
-    await request(API_BASE_URL + 'agents', {
-      method: "POST",
-      body: JSON.stringify(agent),
-    });
+    if (agent.id) {
+      // Update existing agent
+      await request(API_BASE_URL + 'agents/' + agent.id, {
+        method: "PUT",
+        body: JSON.stringify(agent),
+      });
+      showAlert("Agent updated successfully!");
+    } else {
+      // Add new agent
+      await request(API_BASE_URL + 'agents', {
+        method: "POST",
+        body: JSON.stringify(agent),
+      });
+      showAlert("Agent added successfully!");
+    }
 
-    showAlert("Agent saved successfully!");
-    window.location.href = "agents.html"; // Redirect to agent list after saving
+    window.location.href = "agents.html";
   } catch (err) {
     showAlert("Failed to save agent: " + (err.message || err), "error");
   }
 }
 
+// ---------- Delete Agent ----------
+async function deleteAgent(id) {
+  if (!confirm("Are you sure you want to delete this agent?")) return;
+
+  try {
+    await request(API_BASE_URL + 'agents/' + id, {
+      method: "DELETE",
+    });
+    showAlert("Agent deleted successfully!");
+    loadAgents();
+  } catch (err) {
+    showAlert("Failed to delete agent: " + (err.message || err), "error");
+  }
+}
+
 // ---------- Setup Form Page ----------
 function setupFormPage() {
-  const form = document.getElementById('agentForm'); // Ensure form has this ID
+  const form = document.getElementById('agentForm');
   if (!form) return;
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const agentData = readForm();
 
-    // Validation
     if (!agentData.full_name || !agentData.email) {
       showAlert("Full Name and Email are required.", "error");
       return;
@@ -164,6 +183,23 @@ function setupFormPage() {
 
     await saveAgent(agentData);
   });
+
+  // If editing, pre-fill the form
+  const params = new URLSearchParams(window.location.search);
+  const agentId = params.get('id');
+
+  if (agentId) {
+    fetchAgentForEdit(agentId);
+  }
+}
+
+async function fetchAgentForEdit(id) {
+  try {
+    const agent = await request(API_BASE_URL + 'agents/' + id);
+    fillForm(agent);
+  } catch (err) {
+    showAlert("Failed to load agent: " + (err.message || err), "error");
+  }
 }
 
 // ---------- Dashboard ----------
@@ -171,43 +207,36 @@ async function renderDashboard() {
   try {
     const agents = await request(API_BASE_URL + 'agents');
     const total = Array.isArray(agents) ? agents.length : 0;
-    const active = (agents || []).filter(a => (a.status || '').toLowerCase() === 'active').length;
+    const active = agents.filter(a => (a.status || '').toLowerCase() === 'active').length;
     const inactive = total - active;
 
-    const totalEl = document.getElementById('total-agents');    
-    const activeEl = document.getElementById('active-agents');    
-    const inactiveEl = document.getElementById('inactive-agents');    
+    document.getElementById('total-agents').textContent = total;
+    document.getElementById('active-agents').textContent = active;
+    document.getElementById('inactive-agents').textContent = inactive;
 
-    if (totalEl) totalEl.textContent = total;    
-    if (activeEl) activeEl.textContent = active;    
-    if (inactiveEl) inactiveEl.textContent = inactive;    
+    const recent = [...agents].sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0)).slice(0, 5);
 
-    const recent = (agents || [])
-      .slice()
-      .sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0))
-      .slice(0, 5);
-
-    const tbody = document.querySelector('#recent-table tbody');    
-    if (tbody) {    
-      tbody.innerHTML = '';    
-      for (const a of recent) {    
-        const tr = document.createElement('tr');    
-        const statusClass = (a.status || '').toLowerCase() === 'active' ? 'active' : 'inactive';    
+    const tbody = document.querySelector('#recent-table tbody');
+    if (tbody) {
+      tbody.innerHTML = '';
+      for (const a of recent) {
+        const tr = document.createElement('tr');
+        const statusClass = (a.status || '').toLowerCase() === 'active' ? 'active' : 'inactive';
         tr.innerHTML = `
-          <td>${a.id || ''}</td>    
-          <td>${escapeHtml(a.full_name || '')}</td>    
-          <td>${escapeHtml(a.role || '')}</td>    
-          <td><span class="status ${statusClass}">${escapeHtml(a.status || '')}</span></td>    
-        `;    
-        tbody.appendChild(tr);    
-      }    
+          <td>${a.id || ''}</td>
+          <td>${escapeHtml(a.full_name || '')}</td>
+          <td>${escapeHtml(a.role || '')}</td>
+          <td><span class="status ${statusClass}">${escapeHtml(a.status || '')}</span></td>
+        `;
+        tbody.appendChild(tr);
+      }
     }
   } catch (err) {
     showAlert('Failed to load dashboard: ' + (err.message || err), 'error');
   }
 }
 
-// ---------- Agents ----------
+// ---------- Agents List ----------
 let AGENTS_CACHE = [];
 
 async function loadAgents() {
@@ -244,6 +273,7 @@ function renderAgentsTable(agents) {
   const tbody = document.querySelector('#agents-table tbody');
   if (!tbody) return;
   tbody.innerHTML = '';
+
   for (const a of agents) {
     const tr = document.createElement('tr');
     tr.dataset.id = a.id;
@@ -263,11 +293,26 @@ function renderAgentsTable(agents) {
     `;
     tbody.appendChild(tr);
   }
+
+  // Attach event listeners
+  tbody.querySelectorAll('.btn-edit').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const id = e.target.closest('tr').dataset.id;
+      window.location.href = `form.html?id=${id}`;
+    });
+  });
+
+  tbody.querySelectorAll('.btn-delete').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const id = e.target.closest('tr').dataset.id;
+      deleteAgent(id);
+    });
+  });
 }
 
 // ---------- Sidebar Toggle ----------
 function setupSidebar() {
-  const sidebarToggle = document.getElementById('menu-toggle'); 
+  const sidebarToggle = document.getElementById('menu-toggle');
   const sidebar = document.querySelector('.sidebar');
   if (!sidebarToggle || !sidebar) return;
 
@@ -293,7 +338,7 @@ function init() {
 
   if (page === 'dashboard') renderDashboard();
   if (page === 'agents') loadAgents();
-  if (page === 'form') setupFormPage(); // Fixed optional chaining issue
+  if (page === 'form') setupFormPage();
 
   if (page === 'login') {
     const loginForm = document.getElementById("loginForm");
@@ -303,5 +348,4 @@ function init() {
   if (page === 'logout') logout();
 }
 
-// Run init after DOM is loaded
 document.addEventListener('DOMContentLoaded', init);
