@@ -7,22 +7,18 @@ const fs = require("fs");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ---------------------------
 // Middleware
-// ---------------------------
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve frontend (from "../frontend" folder)
+// Serve static frontend
 app.use(express.static(path.join(__dirname, "../frontend")));
 
-// Path to JSON file
+// Path to agents JSON
 const jsonFilePath = path.join(__dirname, "agent.json");
 
-// ---------------------------
-// Helper: read/write JSON
-// ---------------------------
+// Helper functions
 function readJsonData() {
   if (fs.existsSync(jsonFilePath)) {
     const fileContent = fs.readFileSync(jsonFilePath, "utf-8");
@@ -36,28 +32,27 @@ function writeJsonData(data) {
 }
 
 // ---------------------------
-// LOGIN ENDPOINT
+// Login Route
 // ---------------------------
 app.post("/api/login", (req, res) => {
   const { email, password } = req.body;
 
-  // Hardcoded login credentials
   if (email === "datnova@gmail.com" && password === "datnova@999") {
     return res.json({
       success: true,
       message: "Login successful",
-      user: { email }, // Return user info
+      user: { email, name: "Admin" },
     });
   } else {
     return res.status(401).json({
       success: false,
-      message: "Invalid credentials",
+      error: "Invalid email or password",
     });
   }
 });
 
 // ---------------------------
-// API ROUTES (Agents CRUD)
+// API Routes
 // ---------------------------
 
 // Get all agents
@@ -66,7 +61,7 @@ app.get("/api/agents", (req, res) => {
   res.json(agents);
 });
 
-// Get single agent
+// Get agent by ID
 app.get("/api/agents/:id", (req, res) => {
   const { id } = req.params;
   const agents = readJsonData();
@@ -77,7 +72,7 @@ app.get("/api/agents/:id", (req, res) => {
 
 // Add new agent
 app.post("/api/agents", (req, res) => {
-  const { full_name, email, phone, role, department, status } = req.body;
+  const { full_name, email, phone, address, role, department, status, date_of_joining } = req.body;
 
   let agents = readJsonData();
   const newAgent = {
@@ -85,24 +80,25 @@ app.post("/api/agents", (req, res) => {
     full_name,
     email,
     phone,
+    address,
     role,
     department,
     status,
+    date_of_joining,
   };
 
   agents.push(newAgent);
   writeJsonData(agents);
-
   res.json(newAgent);
 });
 
 // Update agent
 app.put("/api/agents/:id", (req, res) => {
   const { id } = req.params;
-  const { full_name, email, phone, role, department, status } = req.body;
+  const { full_name, email, phone, address, role, department, status, date_of_joining } = req.body;
 
   let agents = readJsonData();
-  let agentIndex = agents.findIndex((a) => a.id === parseInt(id));
+  const agentIndex = agents.findIndex((a) => a.id === parseInt(id));
 
   if (agentIndex === -1) {
     return res.status(404).json({ error: "Agent not found" });
@@ -113,13 +109,14 @@ app.put("/api/agents/:id", (req, res) => {
     full_name,
     email,
     phone,
+    address,
     role,
     department,
     status,
+    date_of_joining,
   };
 
   writeJsonData(agents);
-
   res.json(agents[agentIndex]);
 });
 
@@ -138,16 +135,11 @@ app.delete("/api/agents/:id", (req, res) => {
   res.json({ message: "Agent deleted successfully" });
 });
 
-// ---------------------------
-// Catch-all: always serve login.html for unknown routes
-// ---------------------------
+// Catch-all to serve frontend
 app.use((req, res) => {
   res.sendFile(path.join(__dirname, "../frontend", "login.html"));
 });
 
-// ---------------------------
-// Start server
-// ---------------------------
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
