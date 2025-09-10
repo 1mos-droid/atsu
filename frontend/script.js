@@ -205,13 +205,22 @@ function renderAgentsTable(agents) {
 
 // ---------- Sidebar Toggle ----------
 function setupSidebar() {
-  const sidebarToggle = document.getElementById('sidebar-toggle'); // Matches your HTML button
-  const sidebar = document.querySelector('.sidebar'); // Matches your <aside class="sidebar">
+  const sidebarToggle = document.getElementById('menu-toggle'); // FIXED: Matches your HTML ID
+  const sidebar = document.querySelector('.sidebar');
   if (!sidebarToggle || !sidebar) return;
 
+  // Toggle sidebar on button click
   sidebarToggle.addEventListener('click', () => {
     sidebar.classList.toggle('open');
     document.body.classList.toggle('sidebar-open');
+  });
+
+  // Close sidebar when clicking overlay
+  document.body.addEventListener('click', (e) => {
+    if (document.body.classList.contains('sidebar-open') && e.target === document.body) {
+      sidebar.classList.remove('open');
+      document.body.classList.remove('sidebar-open');
+    }
   });
 }
 
