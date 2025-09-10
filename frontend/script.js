@@ -2,6 +2,7 @@
   script.js — handles all pages
 */
 const API_BASE_URL = '/api/';
+
 // ---------- Alert helper ----------
 function showAlert(message, type = 'success') {
   const el = document.createElement('div');
@@ -31,6 +32,19 @@ async function request(url, opts = {}) {
   const contentType = res.headers.get('content-type') || '';
   if (contentType.includes('application/json')) return await res.json();
   return await res.text();
+}
+
+// ---------- Auth ----------
+function requireAuth(page) {
+  const user = JSON.parse(localStorage.getItem("user") || "null");
+  if (!user && page !== "login" && page !== "logout") {
+    window.location.href = "login.html";
+  }
+}
+
+function logout() {
+  localStorage.removeItem("user");
+  window.location.href = "login.html";
 }
 
 // ---------- Dashboard ----------
@@ -237,6 +251,9 @@ function escapeHtml(str) {
 function init() {
   const page = document.body.dataset.page;
 
+  // 🔐 auth check first
+  requireAuth(page);
+
   if (page === 'dashboard') renderDashboard();
   if (page === 'agents') {
     loadAgents();
@@ -247,6 +264,40 @@ function init() {
     document.querySelector('#agents-table tbody').addEventListener('click', agentsTableHandler);
   }
   if (page === 'form') setupFormPage();
+
+  // login page
+  if (page === 'login') {
+    const form = document.getElementById("loginForm");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      try {
+        const res = await fetch(API_BASE_URL + "login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          localStorage.setItem("user", JSON.stringify(data.user));
+          window.location.href = "index.html";
+        } else {
+          document.getElementById("error").textContent = data.error || "Login failed.";
+        }
+      } catch (err) {
+        document.getElementById("error").textContent = "Server error.";
+      }
+    });
+  }
+
+  // logout page
+  if (page === 'logout') {
+    logout();
+  }
 
   // sidebar toggle
   const menuToggle = document.getElementById('menu-toggle');
