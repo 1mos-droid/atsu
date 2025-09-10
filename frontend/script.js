@@ -54,6 +54,34 @@ function logout() {
   window.location.href = "login.html";
 }
 
+// Handle login
+async function handleLogin(event) {
+  event.preventDefault();
+
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+
+  try {
+    const res = await request(API_BASE_URL + "login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (res.success) {
+      // Save user to localStorage
+      localStorage.setItem("user", JSON.stringify(res.user));
+      showAlert("Login successful!");
+
+      // Redirect to dashboard
+      window.location.href = "index.html";
+    } else {
+      showAlert("Invalid credentials", "error");
+    }
+  } catch (err) {
+    showAlert("Login failed: " + (err.message || err), "error");
+  }
+}
+
 // ---------- Helpers ----------
 function escapeHtml(str) {
   return String(str)
@@ -228,16 +256,20 @@ function setupSidebar() {
 function init() {
   const page = document.body ? document.body.dataset.page : undefined;
 
+  // Check authentication
   requireAuth(page);
+
   setupSidebar();
 
   if (page === 'dashboard') renderDashboard();
   if (page === 'agents') loadAgents();
-  if (page === 'form') setupFormPage?.(); // safe optional chaining
+  if (page === 'form') setupFormPage?.();
+
   if (page === 'login') {
     const loginForm = document.getElementById("loginForm");
     if (loginForm) loginForm.addEventListener("submit", handleLogin);
   }
+
   if (page === 'logout') logout();
 }
 
