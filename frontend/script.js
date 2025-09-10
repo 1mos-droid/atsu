@@ -120,7 +120,11 @@ async function renderDashboard() {
     if (activeEl) activeEl.textContent = active;    
     if (inactiveEl) inactiveEl.textContent = inactive;    
 
-    const recent = (agents || []).slice().sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0)).slice(0, 5);    
+    const recent = (agents || [])
+      .slice()
+      .sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0))
+      .slice(0, 5);
+
     const tbody = document.querySelector('#recent-table tbody');    
     if (tbody) {    
       tbody.innerHTML = '';    
@@ -164,11 +168,13 @@ function populateFilters(agents) {
 
   if (roleEl) {
     roleEl.innerHTML =
-      `<option value="">All Roles</option>` + roles.map(r => `<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`).join('');
+      `<option value="">All Roles</option>` +
+      roles.map(r => `<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`).join('');
   }
   if (deptEl) {
     deptEl.innerHTML =
-      `<option value="">All Departments</option>` + depts.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('');
+      `<option value="">All Departments</option>` +
+      depts.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('');
   }
 }
 
@@ -199,13 +205,14 @@ function renderAgentsTable(agents) {
 
 // ---------- Sidebar Toggle ----------
 function setupSidebar() {
-  const sidebarToggle = document.getElementById('sidebar-toggle');
-  const sidebar = document.getElementById('sidebar');
-  if (sidebarToggle && sidebar) {
-    sidebarToggle.addEventListener('click', () => {
-      sidebar.classList.toggle('open');
-    });
-  }
+  const sidebarToggle = document.getElementById('sidebar-toggle'); // Matches your HTML button
+  const sidebar = document.querySelector('.sidebar'); // Matches your <aside class="sidebar">
+  if (!sidebarToggle || !sidebar) return;
+
+  sidebarToggle.addEventListener('click', () => {
+    sidebar.classList.toggle('open');
+    document.body.classList.toggle('sidebar-open');
+  });
 }
 
 // ---------- Init ----------
@@ -217,7 +224,7 @@ function init() {
 
   if (page === 'dashboard') renderDashboard();
   if (page === 'agents') loadAgents();
-  if (page === 'form') setupFormPage();
+  if (page === 'form') setupFormPage?.(); // safe optional chaining
   if (page === 'login') {
     const loginForm = document.getElementById("loginForm");
     if (loginForm) loginForm.addEventListener("submit", handleLogin);
