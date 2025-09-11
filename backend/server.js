@@ -50,7 +50,11 @@ if (newAgents.length === agents.length) { return res.status(404).json({ error: "
 
 writeJsonData(newAgents); res.json({ message: "Agent deleted successfully" }); });
 
-app.use((req, res) => { res.sendFile(path.join(__dirname, "../frontend", "login.html")); });
+app.use((req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend", "login.html"));
+});
 
-app.listen(PORT, () => { console.log(\n🚀 Server running at http://localhost:${PORT}); });
+app.listen(PORT, () => {
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
+});
 
