@@ -1,145 +1,58 @@
-// server.js
-const express = require("express");
-const cors = require("cors");
-const path = require("path");
-const fs = require("fs");
+// server.js const express = require("express"); const cors = require("cors"); const path = require("path"); const fs = require("fs");
 
-const app = express();
-const PORT = process.env.PORT || 5000;
+const app = express(); const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// --------------------------- // Middleware // --------------------------- app.use(cors({ origin: "*", // Allow all origins for now methods: "GET,POST,PUT,DELETE", allowedHeaders: "Content-Type" }));
 
-// Serve static frontend
-app.use(express.static(path.join(__dirname, "../frontend")));
+app.use(express.json()); app.use(express.urlencoded({ extended: true }));
 
-// Path to agents JSON
-const jsonFilePath = path.join(__dirname, "agent.json");
+// Serve static frontend files app.use(express.static(path.join(__dirname, "../frontend")));
 
-// Helper functions
-function readJsonData() {
-  if (fs.existsSync(jsonFilePath)) {
-    const fileContent = fs.readFileSync(jsonFilePath, "utf-8");
-    return fileContent ? JSON.parse(fileContent) : [];
-  }
-  return [];
-}
+// Path to agents JSON file const jsonFilePath = path.join(__dirname, "agent.json");
 
-function writeJsonData(data) {
-  fs.writeFileSync(jsonFilePath, JSON.stringify(data, null, 2), "utf-8");
-}
+// --------------------------- // Helper functions // --------------------------- function readJsonData() { try { if (fs.existsSync(jsonFilePath)) { const fileContent = fs.readFileSync(jsonFilePath, "utf-8"); return fileContent ? JSON.parse(fileContent) : []; } else { console.warn("agent.json not found, creating new file."); fs.writeFileSync(jsonFilePath, JSON.stringify([], null, 2), "utf-8"); return []; } } catch (err) { console.error("Error reading agent.json:", err); return []; } }
 
-// ---------------------------
-// Login Route
-// ---------------------------
-app.post("/api/login", (req, res) => {
-  const { email, password } = req.body;
+function writeJsonData(data) { try { fs.writeFileSync(jsonFilePath, JSON.stringify(data, null, 2), "utf-8"); console.log("Data saved successfully to agent.json"); } catch (err) { console.error("Failed to save data:", err); } }
 
-  if (email === "datnova@gmail.com" && password === "datnova@999") {
-    return res.json({
-      success: true,
-      message: "Login successful",
-      user: { email, name: "Admin" },
-    });
-  } else {
-    return res.status(401).json({
-      success: false,
-      error: "Invalid email or password",
-    });
-  }
-});
+// --------------------------- // Login Route // --------------------------- app.post("/api/login", (req, res) => { const { email, password } = req.body; console.log("Login attempt:", email);
 
-// ---------------------------
-// API Routes
-// ---------------------------
+if (email === "datnova@gmail.com" && password === "datnova@999") { return res.json({ success: true, message: "Login successful", user: { email, name: "Admin" }, }); } else { return res.status(401).json({ success: false, error: "Invalid email or password", }); } });
 
-// Get all agents
-app.get("/api/agents", (req, res) => {
-  const agents = readJsonData();
-  res.json(agents);
-});
+// --------------------------- // Agents API Routes // ---------------------------
 
-// Get agent by ID
-app.get("/api/agents/:id", (req, res) => {
-  const { id } = req.params;
-  const agents = readJsonData();
-  const agent = agents.find((a) => a.id === parseInt(id));
-  if (!agent) return res.status(404).json({ error: "Agent not found" });
-  res.json(agent);
-});
+// Get all agents app.get("/api/agents", (req, res) => { const agents = readJsonData(); res.json(agents); });
 
-// Add new agent
-app.post("/api/agents", (req, res) => {
-  const { full_name, email, phone, address, role, department, status, date_of_joining } = req.body;
+// Get agent by ID app.get("/api/agents/:id", (req, res) => { const { id } = req.params; const agents = readJsonData(); const agent = agents.find((a) => a.id === parseInt(id)); if (!agent) return res.status(404).json({ error: "Agent not found" }); res.json(agent); });
 
-  let agents = readJsonData();
-  const newAgent = {
-    id: agents.length > 0 ? agents[agents.length - 1].id + 1 : 1,
-    full_name,
-    email,
-    phone,
-    address,
-    role,
-    department,
-    status,
-    date_of_joining,
-  };
+// Add new agent app.post("/api/agents", (req, res) => { console.log("Received new agent data:", req.body);
 
-  agents.push(newAgent);
-  writeJsonData(agents);
-  res.json(newAgent);
-});
+const { full_name, email, phone, address, role, department, status, date_of_joining } = req.body;
 
-// Update agent
-app.put("/api/agents/:id", (req, res) => {
-  const { id } = req.params;
-  const { full_name, email, phone, address, role, department, status, date_of_joining } = req.body;
+if (!full_name || !email) { return res.status(400).json({ error: "Full name and email are required" }); }
 
-  let agents = readJsonData();
-  const agentIndex = agents.findIndex((a) => a.id === parseInt(id));
+let agents = readJsonData(); const newAgent = { id: agents.length > 0 ? agents[agents.length - 1].id + 1 : 1, full_name, email, phone, address, role, department, status: status || "active", date_of_joining: date_of_joining || null, };
 
-  if (agentIndex === -1) {
-    return res.status(404).json({ error: "Agent not found" });
-  }
+agents.push(newAgent); writeJsonData(agents); res.json(newAgent); });
 
-  agents[agentIndex] = {
-    id: parseInt(id),
-    full_name,
-    email,
-    phone,
-    address,
-    role,
-    department,
-    status,
-    date_of_joining,
-  };
+// Update existing agent app.put("/api/agents/:id", (req, res) => { const { id } = req.params; const { full_name, email, phone, address, role, department, status, date_of_joining } = req.body;
 
-  writeJsonData(agents);
-  res.json(agents[agentIndex]);
-});
+let agents = readJsonData(); const agentIndex = agents.findIndex((a) => a.id === parseInt(id));
 
-// Delete agent
-app.delete("/api/agents/:id", (req, res) => {
-  const { id } = req.params;
-  let agents = readJsonData();
+if (agentIndex === -1) { return res.status(404).json({ error: "Agent not found" }); }
 
-  const newAgents = agents.filter((a) => a.id !== parseInt(id));
+agents[agentIndex] = { id: parseInt(id), full_name, email, phone, address, role, department, status: status || "active", date_of_joining: date_of_joining || null, };
 
-  if (newAgents.length === agents.length) {
-    return res.status(404).json({ error: "Agent not found" });
-  }
+writeJsonData(agents); res.json(agents[agentIndex]); });
 
-  writeJsonData(newAgents);
-  res.json({ message: "Agent deleted successfully" });
-});
+// Delete agent app.delete("/api/agents/:id", (req, res) => { const { id } = req.params; let agents = readJsonData();
 
-// Catch-all to serve frontend
-app.use((req, res) => {
-  res.sendFile(path.join(__dirname, "../frontend", "login.html"));
-});
+const newAgents = agents.filter((a) => a.id !== parseInt(id));
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
-});
+if (newAgents.length === agents.length) { return res.status(404).json({ error: "Agent not found" }); }
+
+writeJsonData(newAgents); res.json({ message: "Agent deleted successfully" }); });
+
+// --------------------------- // Fallback to Frontend // --------------------------- app.use((req, res) => { res.sendFile(path.join(__dirname, "../frontend", "login.html")); });
+
+// --------------------------- // Start the server // --------------------------- app.listen(PORT, () => { console.log(\n🚀 Server running at http://localhost:${PORT}); });
+
